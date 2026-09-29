@@ -1,0 +1,264 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- ===== 简体中文 ===== -->
+    <sys:String x:Key="s.AppTitle">批量打印助手</sys:String>
+    <sys:String x:Key="s.AppSubtitle">测试版</sys:String>
+
+    <sys:String x:Key="s.NavPrint">打印任务</sys:String>
+    <sys:String x:Key="s.NavSettings">设置</sys:String>
+    <sys:String x:Key="s.NavAbout">关于</sys:String>
+    <sys:String x:Key="s.NavHistory">历史</sys:String>
+    <sys:String x:Key="s.SaveTemplate">存为模板</sys:String>
+    <sys:String x:Key="s.DeleteTemplate">删模板</sys:String>
+    <sys:String x:Key="s.TemplateTip">打印模板：选择即整套套用下面的打印设置</sys:String>
+    <sys:String x:Key="s.TemplatePrompt">请输入模板名称：</sys:String>
+    <sys:String x:Key="s.TemplatePlaceholder">选择模板…</sys:String>
+    <sys:String x:Key="s.TemplateLabel">模板：</sys:String>
+    <sys:String x:Key="s.MsgNoTemplate">请先在下拉框中选择一个模板。</sys:String>
+    <sys:String x:Key="s.MsgEmptyTemplate">这个模板是旧版本保存的空模板（不含任何参数）。请重新设好参数后再点「存为模板」。</sys:String>
+    <sys:String x:Key="s.TemplateSaved">模板已保存：</sys:String>
+    <sys:String x:Key="s.TemplateApplied">已应用模板：</sys:String>
+    <sys:String x:Key="s.TemplateDeleted">模板已删除：</sys:String>
+    <sys:String x:Key="s.NoTemplate">（无模板）</sys:String>
+    <sys:String x:Key="s.HistoryTitle">打印历史</sys:String>
+    <sys:String x:Key="s.HistoryAllPrinter">全部打印机</sys:String>
+    <sys:String x:Key="s.HistoryRangeAll">全部时间</sys:String>
+    <sys:String x:Key="s.HistoryRangeToday">今天</sys:String>
+    <sys:String x:Key="s.HistoryRangeWeek">近 7 天</sys:String>
+    <sys:String x:Key="s.HistoryEmpty">暂无打印记录。打印一次后这里就会显示历史。</sys:String><sys:String x:Key="s.HistoryLimit">历史显示</sys:String><sys:String x:Key="s.HistoryLimit200">200 条</sys:String><sys:String x:Key="s.HistoryLimit100">100 条</sys:String><sys:String x:Key="s.HistoryLimit10d">最近十天</sys:String><sys:String x:Key="s.HistoryLimitHidden">不显示</sys:String><sys:String x:Key="s.HistoryLoading">加载中…</sys:String><sys:String x:Key="s.HistoryHidden">已设置为不显示历史（记录仍会保存）。</sys:String><sys:String x:Key="s.DataDir">数据目录</sys:String>
+    <sys:String x:Key="s.HistoryFilter">筛选：</sys:String>
+    <sys:String x:Key="s.HistoryCount">共 {0} 条记录</sys:String>
+    <sys:String x:Key="s.HistoryName">文件名</sys:String>
+    <sys:String x:Key="s.HistoryStatus">状态</sys:String>
+    <sys:String x:Key="s.HistorySearch">搜索文件名/文件夹</sys:String>
+    <sys:String x:Key="s.HistoryFolder">所在文件夹</sys:String>
+    <sys:String x:Key="s.HistoryExport">导出 CSV</sys:String>
+    <sys:String x:Key="s.HistoryCountFiltered">匹配 {0} / 共 {1} 条</sys:String>
+    <sys:String x:Key="s.HistoryExportEmpty">当前筛选无记录可导出。</sys:String>
+    <sys:String x:Key="s.HistoryExportDone">已导出 {0} 条至 {1}</sys:String>
+    <sys:String x:Key="s.HistoryExportFail">导出失败：</sys:String>
+
+    <sys:String x:Key="s.AddFiles">添加文件</sys:String>
+    <sys:String x:Key="s.AddFolder">添加文件夹</sys:String>
+    <sys:String x:Key="s.RemoveSelected">移除选中</sys:String>
+    <sys:String x:Key="s.ClearList">清空列表</sys:String>
+    <sys:String x:Key="s.Printer">打印机：</sys:String>
+    <sys:String x:Key="s.Refresh">刷新</sys:String>
+    <sys:String x:Key="s.PrinterSetup">打印机设置</sys:String>
+    <sys:String x:Key="s.PrintSetup">打印设置</sys:String>
+    <sys:String x:Key="s.StartPrint">开始打印</sys:String>
+    <sys:String x:Key="s.Stop">停止</sys:String>
+
+    <sys:String x:Key="s.PageHint">页码提示：留空 = 全部页面；指定页码用英文格式，如 1-3（第1~3页）或 1,3-5（第1页、第3~5页）。份数直接填数字。</sys:String>
+    <sys:String x:Key="s.ColName">文件名称</sys:String>
+    <sys:String x:Key="s.ColType">类型</sys:String>
+    <sys:String x:Key="s.ColPages">页数</sys:String>
+    <!-- 修整11（V4.4 二批）：主列表「大小」列删除，s.ColSize 中英两侧同步删（键数一一对应断言） -->
+    <sys:String x:Key="s.ColTime">时间</sys:String>
+    <sys:String x:Key="s.ColCopies">份数</sys:String>
+    <sys:String x:Key="s.ColRange">页码范围</sys:String>
+    <!-- 修整7（V4.4）：列头只留"页码范围"，原括号提示改成单元格里的灰字占位水印 -->
+    <sys:String x:Key="s.ColRangeHint">空=全部，如 1-3,5</sys:String>
+    <sys:String x:Key="s.ColStatus">状态</sys:String>
+    <sys:String x:Key="s.CheckedCount">已勾选 {0} / 共 {1} 个文件</sys:String>
+    <sys:String x:Key="s.StatusSkipped">已跳过</sys:String>
+    <sys:String x:Key="s.LogSkipped">已跳过 {0} 个未勾选文件。</sys:String>
+    <sys:String x:Key="s.StatusQueued">排队中</sys:String>
+    <sys:String x:Key="s.StatusPrintingRow">打印中</sys:String>
+    <sys:String x:Key="s.StatusDoneRow">已完成</sys:String>
+    <sys:String x:Key="s.StatusFailedRow">失败</sys:String>
+    <sys:String x:Key="s.QueuePaperOut">缺纸</sys:String>
+    <sys:String x:Key="s.QueueOffline">打印机离线</sys:String>
+    <sys:String x:Key="s.QueueDeleting">取消中</sys:String>
+    <sys:String x:Key="s.QueueBlocked">阻塞（卡纸/错误，请检查打印机）</sys:String>
+    <!-- 修整20（V4.4 五批）：底栏进度区的文件级计数与剩余时间预估（预估只在样本 ≥2 且可信时出现） -->
+    <sys:String x:Key="s.ProgCount">第 {0} / {1} 个</sys:String>
+    <sys:String x:Key="s.ProgEta">预计剩余 ≈ {0}</sys:String>
+    <sys:String x:Key="s.ProgFail">失败 {0}</sys:String>
+    <sys:String x:Key="s.ProgEtaSec">{0} 秒</sys:String>
+    <sys:String x:Key="s.ProgEtaMS">{0} 分 {1} 秒</sys:String>
+    <sys:String x:Key="s.ProgEtaHS">{0} 小时 {1} 分</sys:String>
+    <sys:String x:Key="s.Retry">重试</sys:String><sys:String x:Key="s.ConfirmPrint">确认打印</sys:String><sys:String x:Key="s.TaskPlanSummary">{0} 个文件 → {1} 个任务，请确认：</sys:String>
+    <sys:String x:Key="s.PlanSettings">当前打印设置：</sys:String>
+    <sys:String x:Key="s.ModifySettings">修改设置</sys:String>
+    <sys:String x:Key="s.TaskPlanTitle">任务规划</sys:String>
+
+    <sys:String x:Key="s.StatusReady">就绪（列表 {0} 个文件）</sys:String>
+    <sys:String x:Key="s.StatusPrinting">正在打印…（共 {0} 个文件）</sys:String>
+    <sys:String x:Key="s.StatusStopping">正在停止…（当前文件打印完即停）</sys:String>
+    <sys:String x:Key="s.StatusDone">完成：成功 {0} 个，失败 {1} 个</sys:String>
+
+    <sys:String x:Key="s.MsgNoFiles">请先添加要打印的文件。</sys:String>
+    <sys:String x:Key="s.MsgNoChecked">没有勾选任何文件，请先勾选要打印的文件。</sys:String>
+    <sys:String x:Key="s.MsgNoPrinter">本机未检测到可用打印机。</sys:String>
+    <sys:String x:Key="s.MsgSelectPrinter">请先选择一台打印机。</sys:String>
+    <sys:String x:Key="s.MsgPrinterSetupError">无法打开打印机设置：</sys:String>
+    <sys:String x:Key="s.MsgExitConfirm">打印任务还在进行，确定要退出吗？</sys:String>
+    <sys:String x:Key="s.ExitTitle">退出</sys:String>
+    <sys:String x:Key="s.PrintSettingsUpdated">打印设置已更新：</sys:String>
+    <sys:String x:Key="s.Error">错误</sys:String>
+    <sys:String x:Key="s.Hint">提示</sys:String>
+    <sys:String x:Key="s.Warning">警告</sys:String>
+    <sys:String x:Key="s.Ok">确定</sys:String>
+    <sys:String x:Key="s.Cancel">取消</sys:String>
+    <sys:String x:Key="s.Yes">是</sys:String>
+    <sys:String x:Key="s.No">否</sys:String>
+
+    <sys:String x:Key="s.LogStartHint">提示：把 PDF/Word/Excel/PPT/图片/文本 拖入窗口即可加入列表；Office 文档经静默转 PDF 无感打印，不弹任何窗口。</sys:String>
+    <sys:String x:Key="s.LogAdded">已加入 {0} 个文件（共 {1} 个）。</sys:String>
+    <sys:String x:Key="s.LogRemoved">已移除 {0} 个文件。</sys:String>
+    <sys:String x:Key="s.LogCleared">列表已清空。</sys:String>
+    <sys:String x:Key="s.LogAddFailed">添加失败：</sys:String>
+    <sys:String x:Key="s.LogEnd">=== 打印结束：成功 {0}，失败 {1} ===</sys:String>
+
+    <sys:String x:Key="s.SettingsTitle">设置</sys:String>
+    <sys:String x:Key="s.SettingsLanguage">语言 / Language</sys:String>
+    <sys:String x:Key="s.SettingsLanguageDesc">切换界面显示语言，立即生效。</sys:String>
+    <sys:String x:Key="s.LangZh">简体中文</sys:String>
+    <sys:String x:Key="s.LangEn">English</sys:String>
+    <sys:String x:Key="s.SettingsTheme">外观模式</sys:String>
+    <sys:String x:Key="s.SettingsThemeDesc">浅色 / 深色模式即时切换。</sys:String>
+    <sys:String x:Key="s.ThemeLight">浅色模式</sys:String>
+    <sys:String x:Key="s.ThemeDark">深色模式</sys:String>
+    <sys:String x:Key="s.SettingsEngine">转换引擎</sys:String>
+    <sys:String x:Key="s.SettingsEngineDesc">Word/Excel/PPT 转 PDF 用的引擎。自动 = 有本机 WPS/Office 用 COM，没有则用 MiniPdf（免装 Office，仅 docx/xlsx/pptx）；老格式 .doc/.xls/.ppt 无 Office 时需另存新格式。</sys:String>
+    <sys:String x:Key="s.EngineAuto">自动（推荐，默认）</sys:String>
+    <sys:String x:Key="s.EngineCom">COM（本机 WPS/Office）</sys:String>
+    <sys:String x:Key="s.EngineMiniPdf">MiniPdf（纯托管，无需 Office）</sys:String>
+    <sys:String x:Key="s.EngineDetectStatus">检测结果：</sys:String>
+    <sys:String x:Key="s.EngineReDetect">重新检测</sys:String>
+    <sys:String x:Key="s.EngineFallback">COM(回退)</sys:String>
+    <sys:String x:Key="s.SettingsOutputTitle">验证落盘</sys:String>
+    <sys:String x:Key="s.SettingsOutputDesc">把打印输出 / 转换中间产物自动落盘到本地目录，供真机验证与双引擎对比。</sys:String>
+    <sys:String x:Key="s.SettingsPrintoutDir">Print to PDF 输出目录：</sys:String>
+    <sys:String x:Key="s.SettingsKeepConverted">保留转换产物（中间 PDF，供 MiniPdf/COM 双引擎保真对比）</sys:String>
+    <sys:String x:Key="s.SettingsConvertDir">转换产物目录：</sys:String>
+    <sys:String x:Key="s.SettingsOther">其他</sys:String>
+    <sys:String x:Key="s.SettingsDataDirDesc">本机数据目录（历史库与临时产物都在这里），不上传任何内容。日志位置请看「关于」页：</sys:String>
+
+    <sys:String x:Key="s.AboutTitle">关于</sys:String>
+    <sys:String x:Key="s.AboutVersion">版本</sys:String>
+    <sys:String x:Key="s.AboutEngine">引擎：内置 pdfium（PDF）+ 本机 WPS/Office（Word/Excel/PPT）</sys:String>
+    <sys:String x:Key="s.AboutIndependent">本工具为独立开发的中文 Windows 批量打印工具，与 Radixile PrintPool 无代码/资源复用关系。</sys:String>
+    <sys:String x:Key="s.AboutPrivacy">隐私：仅在本机打印，不联网、不上传任何文档内容。</sys:String>
+    <sys:String x:Key="s.AboutLogs">日志位置</sys:String>
+    <sys:String x:Key="s.AboutOpenLog">打开日志目录</sys:String>
+
+    <sys:String x:Key="s.PdfPasswordTitle">PDF 已加密</sys:String>
+    <sys:String x:Key="s.PdfPasswordHint">该 PDF 已加密，需要密码才能打印：</sys:String>
+
+    <!-- ===== 打印设置弹窗 ===== -->
+    <sys:String x:Key="s.PsTitle">打印设置</sys:String>
+    <sys:String x:Key="s.PsDuplex">双面打印</sys:String>
+    <sys:String x:Key="s.PsSimplex">单面</sys:String>
+    <sys:String x:Key="s.PsLongEdge">双面 · 长边翻页（书籍式）</sys:String>
+    <sys:String x:Key="s.PsShortEdge">双面 · 短边翻页（日历式）</sys:String>
+    <sys:String x:Key="s.PsColorMode">色彩模式</sys:String>
+    <sys:String x:Key="s.PsColor">彩色</sys:String>
+    <sys:String x:Key="s.PsBlackWhite">黑白（灰度）</sys:String>
+    <sys:String x:Key="s.PsOrientation">页面方向</sys:String>
+    <sys:String x:Key="s.PsAutoOrient">自动（按文档横竖）</sys:String>
+    <sys:String x:Key="s.PsPortrait">纵向</sys:String>
+    <sys:String x:Key="s.PsLandscape">横向</sys:String>
+    <sys:String x:Key="s.PsPaper">纸张大小</sys:String>
+    <sys:String x:Key="s.PsPaperDefault">（默认 A4）</sys:String>
+    <sys:String x:Key="s.PsPagesPerSheet">每页版数</sys:String>
+    <sys:String x:Key="s.PsPagesOne">1 版（默认）</sys:String>
+    <sys:String x:Key="s.PsPagesN">{0} 版</sys:String>
+    <sys:String x:Key="s.PsPagesHint">发票、证件照等多页拼一页时用（PDF 生效）</sys:String>
+    <sys:String x:Key="s.PsScale">缩放</sys:String>
+    <sys:String x:Key="s.PsFitPage">缩放到合适页面（按所选纸张自动匹配）</sys:String>
+    <sys:String x:Key="s.PsCustomScale">自定义缩放：</sys:String>
+    <sys:String x:Key="s.PsScalePercent">缩放比例</sys:String>
+    <sys:String x:Key="s.PsPercentRange">%（1–400）</sys:String>
+    <sys:String x:Key="s.PsNote">说明：双面/色彩/纸张/每页版数/缩放对 PDF 与 Office 文档（经静默转 PDF）完全生效；图片按单页打印。</sys:String>
+    <sys:String x:Key="s.PsPreviewTitle">打印预览（示意）</sys:String>
+
+    <!-- ===== Toast 提示弹窗 ===== -->
+    <sys:String x:Key="s.ToastSuccess">打印完成，全部成功。</sys:String>
+    <sys:String x:Key="s.ToastSuccessCount">共 {0} 个文件。</sys:String>
+    <sys:String x:Key="s.ToastFail">打印失败，请检查打印机连接或文件。</sys:String>
+    <sys:String x:Key="s.ToastFailCount">失败 {0} 个文件。</sys:String>
+    <sys:String x:Key="s.ToastNewFeature">新功能上线</sys:String>
+
+    <!-- ===== v2.4 新增：停止/继续 + 统计表格 + 文件夹选择 ===== -->
+    <sys:String x:Key="s.ContinuePrint">继续打印</sys:String>
+    <sys:String x:Key="s.StatusPaused">已暂停：剩余 {0} 个文件待打印</sys:String>
+    <sys:String x:Key="s.LogPaused">已停止，剩余 {0} 个文件（可点“继续打印”续打）</sys:String>
+    <sys:String x:Key="s.LogQueueCancelled">已取消打印机队列中的 {0} 个任务</sys:String>
+    <sys:String x:Key="s.LogReportSaved">统计表格已保存：</sys:String>
+    <sys:String x:Key="s.LogReportFailed">统计表格生成失败：</sys:String>
+    <sys:String x:Key="s.ToastReportSaved">统计表格已保存：</sys:String>
+
+    <sys:String x:Key="s.SettingsReport">打印统计</sys:String>
+    <sys:String x:Key="s.SettingsReportDesc">打印完成后输出一份 CSV 统计表格（文件名 / 后缀 / 份数 / 页数 / 状态 / 时间 / 打印机）。</sys:String>
+    <sys:String x:Key="s.SettingsReportEnable">打印完成后输出统计表格（CSV，默认关闭）</sys:String>
+    <sys:String x:Key="s.SettingsReportDir">输出位置：</sys:String>
+    <sys:String x:Key="s.SettingsReportChange">修改…</sys:String>
+
+    <sys:String x:Key="s.FolderSelectTitle">选择文件夹中的文件</sys:String>
+    <sys:String x:Key="s.FolderSelectHint">仅显示支持打印的文件；可按住 Ctrl 点选、Shift 连选。</sys:String>
+    <sys:String x:Key="s.FolderSelectConfirm">添加选中文件</sys:String>
+    <sys:String x:Key="s.FolderSelectAll">全选</sys:String>
+    <sys:String x:Key="s.FolderSelectNone">全不选</sys:String>
+    <!-- U2-3：ToggleSwitch 状态文字 -->
+    <sys:String x:Key="s.ToggleOn">开</sys:String>
+    <sys:String x:Key="s.ToggleOff">关</sys:String>
+    <!-- U2-4：打印设置弹窗页脚「当前生效」 -->
+    <sys:String x:Key="s.PsEffective">当前生效：</sys:String>
+    <!-- V4.3 F6：打印参数全集 -->
+    <sys:String x:Key="s.PsParity">奇偶页</sys:String>
+    <sys:String x:Key="s.PsParityAll">全部</sys:String>
+    <sys:String x:Key="s.PsParityOdd">仅奇数页</sys:String>
+    <sys:String x:Key="s.PsParityEven">仅偶数页</sys:String>
+    <sys:String x:Key="s.PsPaperSource">纸盒</sys:String>
+    <sys:String x:Key="s.PsPaperSourceAuto">自动（打印机默认纸盒）</sys:String>
+    <sys:String x:Key="s.PsScaleMode">缩放模式</sys:String>
+    <sys:String x:Key="s.PsScaleFit">适合页面</sys:String>
+    <sys:String x:Key="s.PsScaleNone">不缩放</sys:String>
+    <sys:String x:Key="s.PsScaleShrink">缩小适配（只缩不放）</sys:String>
+    <sys:String x:Key="s.PsScaleStretch">拉伸适配（填满可打印区）</sys:String>
+    <sys:String x:Key="s.PsScaleCustom">自定义百分比</sys:String>
+    <sys:String x:Key="s.PsBooklet">小册子打印</sys:String>
+    <sys:String x:Key="s.PsBookletHint">对折装订小册子的页序（强制每页 2 版横排，不足 4 的倍数自动补空白）；建议配合双面-长边</sys:String>
+    <sys:String x:Key="s.PsPriorityNote">本设置优先于打印机默认值（应用打印设置 &gt; 打印机系统默认 &gt; 驱动出厂值）</sys:String>
+    <!-- V4.3 F15：打印机设置移入设置页 -->
+    <sys:String x:Key="s.SettingsPrinterTitle">打印机</sys:String>
+    <sys:String x:Key="s.SettingsPrinterDesc">选择打印机（与主页同步）</sys:String>
+    <sys:String x:Key="s.SettingsPrinterProps">打开打印机属性…</sys:String>
+    <sys:String x:Key="s.SettingsPrinterNote">这里改的是 Windows 打印机默认值；单次打印的双面/纸张等请在主页「打印设置」里设</sys:String>
+    <!-- V4.3 F16：历史页表格改造 -->
+    <sys:String x:Key="s.HistorySortHint">点击按此列排序</sys:String>
+    <sys:String x:Key="s.HistoryFilterByPrinter">按打印机筛选</sys:String>
+    <!-- V4.4 F5：逐文件参数卡片 -->
+    <sys:String x:Key="s.ColParams">参数</sys:String>
+    <sys:String x:Key="s.FollowGlobal">跟随全局</sys:String>
+    <sys:String x:Key="s.Custom">自定义</sys:String>
+    <sys:String x:Key="s.ListSep">、</sys:String>
+    <sys:String x:Key="s.RowParamsTitle">本文件的打印参数</sys:String>
+    <sys:String x:Key="s.RowParamsReset">重置为跟随全局</sys:String>
+    <sys:String x:Key="s.RowParamsNote">未改的项跟随全局「打印设置」；份数与页码范围请在列表对应列里填写</sys:String>
+    <sys:String x:Key="s.RowParamsToggleTip">修改该文件的打印参数</sys:String>
+    <sys:String x:Key="s.EditParams">修改</sys:String>
+    <sys:String x:Key="s.RowParamsSave">保存</sys:String>
+    <sys:String x:Key="s.LogCustom">其中 {0} 个文件使用自定义参数（逐文件参数卡片）</sys:String>
+    <sys:String x:Key="s.PlanCustomFields">自定义：{0}</sys:String>
+    <!-- ===== V4.5-2（决2）：历史页状态列文案走资源键（存储层不再直出中文） ===== -->
+    <sys:String x:Key="s.HistStatusOk">成功</sys:String>
+    <sys:String x:Key="s.HistStatusFail">失败</sys:String>
+
+    <!-- ===== V4.7 拆分：功能上限提示 ===== -->
+    <sys:String x:Key="s.TemplateLimitHit">最多保存 5 个模板。</sys:String>
+
+    <!-- ===== V4.7 修整2：关于页「检查更新」（清单口径＝work\docs\客户端契约-20260926.md §2.5） ===== -->
+    <sys:String x:Key="s.AboutUpdateTitle">检查更新</sys:String>
+    <sys:String x:Key="s.AboutUpdateDesc">手动核对官方更新清单（清单地址＝settings.json 的 ApiBase）；只读取清单，不上传任何本机信息</sys:String>
+    <sys:String x:Key="s.AboutUpdateBtn">检查更新</sys:String>
+    <sys:String x:Key="s.UpdateLatestFmt">已是最新版本（当前版本 {0}）。</sys:String>
+    <sys:String x:Key="s.UpdateFoundFmt">发现新版本 {0}（{1}）</sys:String>
+    <sys:String x:Key="s.UpdateNotesFmt">更新说明：{0}</sys:String>
+    <sys:String x:Key="s.UpdateAskDownload">是否打开下载页面？</sys:String>
+    <sys:String x:Key="s.UpdateFailedFmt">检查更新失败：{0}</sys:String>
+    <sys:String x:Key="s.UpdateOpenFailed">无法打开下载页面（默认浏览器不可用或地址无效）。</sys:String>
+</ResourceDictionary>

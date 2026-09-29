@@ -1,0 +1,22 @@
+# M3 编码规范基线（2026-09-18，05-优化方案-v4.2.3）
+# 只统一明显不一致的空白与编码，不开严格风格告警（EnforceOnBuild 不设，避免一夜之间几百条提示）。
+root = true
+
+[*]
+charset = utf-8-bom
+insert_final_newline = true
+trim_trailing_whitespace = true
+end_of_line = crlf
+
+[*.{cs,csproj,props,xaml}]
+indent_style = space
+indent_size = 4
+
+[*.{json,md,yml}]
+indent_size = 2
+
+[*.cs]
+# 与现有代码风格一致：大括号另起一行
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:suggestion
+dotnet_sort_system_directives_first = false

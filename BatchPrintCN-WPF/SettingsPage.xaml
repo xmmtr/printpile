@@ -1,0 +1,205 @@
+﻿<UserControl x:Class="BatchPrintCN.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <!-- U2-7（V4.2.5）：设置页改 WPF-UI 卡片行列表（07 方案 §4.5）。
+         WPF-UI 4.3.0 没有 SettingsCard/SettingsExpander（反射实测），对应物为 CardControl/CardExpander：
+         简单行＝CardControl（图标+标题+说明+右侧控件）；可展开行＝CardExpander（收纳目录/状态明细）。
+         开关用 ToggleSwitch（On/Off 状态字走 s.ToggleOn/s.ToggleOff），语言/主题/引擎用 ComboBox。 -->
+    <!-- V4.7 修整1（行内按钮一律钉最右）：卡片行里"文字 + 按钮"混排会让按钮贴着文字停在中间，
+         所以含按钮的行统一改 Grid 两/三列（标签 Auto + 文字/路径 * + 按钮 Auto + HorizontalAlignment=Right）；
+         新增带按钮的行请照这个写法，别再用 StackPanel 横排。 -->
+    <!-- 同关于页修整：Disabled 约束可视区宽 + StackPanel Stretch 铺满（上限 920） -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="4,0,4,8" MaxWidth="920">
+
+            <!-- F15（V4.3）：打印机（与主页同一 settings 键双向同步 + 打开系统打印机属性） -->
+            <ui:CardControl Padding="16,12" Margin="0,0,0,8">
+                <ui:CardControl.Icon>
+                    <ui:SymbolIcon Symbol="Print24" FontSize="20"/>
+                </ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsPrinterTitle}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsPrinterNote}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox x:Name="PrinterBox2" MinWidth="150" ToolTip="{DynamicResource s.SettingsPrinterDesc}" SelectionChanged="OnPrinterChanged"/>
+                    <Button x:Name="BtnOpenPrinterProps" Content="{DynamicResource s.SettingsPrinterProps}" Style="{StaticResource BtnOutline}" Margin="10,0,0,0" Click="OnOpenPrinterProps"/>
+                </StackPanel>
+            </ui:CardControl>
+
+            <!-- 语言 -->
+            <ui:CardControl Padding="16,12" Margin="0,0,0,8">
+                <ui:CardControl.Icon>
+                    <ui:SymbolIcon Symbol="Globe20" FontSize="20"/>
+                </ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsLanguage}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsLanguageDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="LangBox" MinWidth="150" SelectionChanged="OnLangChanged">
+                    <ComboBoxItem Content="{DynamicResource s.LangZh}"/>
+                    <ComboBoxItem Content="{DynamicResource s.LangEn}"/>
+                </ComboBox>
+            </ui:CardControl>
+
+            <!-- 外观模式 -->
+            <ui:CardControl Padding="16,12" Margin="0,0,0,8">
+                <ui:CardControl.Icon>
+                    <ui:SymbolIcon Symbol="PaintBrush20" FontSize="20"/>
+                </ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsTheme}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsThemeDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="ThemeBox" MinWidth="150" SelectionChanged="OnThemeChanged">
+                    <ComboBoxItem Content="{DynamicResource s.ThemeLight}"/>
+                    <ComboBoxItem Content="{DynamicResource s.ThemeDark}"/>
+                </ComboBox>
+            </ui:CardControl>
+
+            <!-- 打印统计（R3）：开关用 ToggleSwitch -->
+            <ui:CardControl Padding="16,12" Margin="0,0,0,8">
+                <ui:CardControl.Icon>
+                    <ui:SymbolIcon Symbol="DataUsage20" FontSize="20"/>
+                </ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsReport}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsReportDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="ReportEnableBox" Content="{DynamicResource s.SettingsReportEnable}"
+                                 OnContent="{DynamicResource s.ToggleOn}" OffContent="{DynamicResource s.ToggleOff}"
+                                 Margin="0,0,0,0" Checked="OnReportChecked" Unchecked="OnReportChecked"/>
+            </ui:CardControl>
+
+            <!-- 转换引擎：展开收纳状态与重探测 -->
+            <ui:CardExpander ContentPadding="16,12,16,12" Padding="16,12" Margin="0,0,0,8">
+                <ui:CardExpander.Icon>
+                    <ui:SymbolIcon Symbol="Document20" FontSize="20"/>
+                </ui:CardExpander.Icon>
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsEngine}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsEngineDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="{DynamicResource s.SettingsEngine}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13"/>
+                        <ComboBox x:Name="EngineBox" MinWidth="180" SelectionChanged="OnEngineChanged">
+                            <ComboBoxItem Content="{DynamicResource s.EngineAuto}"/>
+                            <ComboBoxItem Content="{DynamicResource s.EngineCom}"/>
+                            <ComboBoxItem Content="{DynamicResource s.EngineMiniPdf}"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <!-- V4.7 修整1：状态文字占左、按钮钉最右（Grid 两列 * + Auto，不再与文字混排） -->
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="EngineStatusText" Grid.Column="0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        <Button x:Name="BtnReDetect" Grid.Column="1" Content="{DynamicResource s.EngineReDetect}" Style="{StaticResource BtnOutline}"
+                                Height="30" Padding="12,0" HorizontalAlignment="Right" Click="OnReDetect"/>
+                    </Grid>
+                </StackPanel>
+            </ui:CardExpander>
+
+            <!-- 验证落盘（V3.2）：展开收纳目录与保留开关 -->
+            <ui:CardExpander ContentPadding="16,12,16,12" Padding="16,12" Margin="0,0,0,8">
+                <ui:CardExpander.Icon>
+                    <ui:SymbolIcon Symbol="Folder20" FontSize="20"/>
+                </ui:CardExpander.Icon>
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsOutputTitle}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsOutputDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <StackPanel>
+                    <!-- V4.7 修整1：目录行三段式——标签(Auto) + 绝对路径(*) + 按钮钉最右(Auto) -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource s.SettingsPrintoutDir}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                        <TextBlock x:Name="PrintoutDirText" Grid.Column="1" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0"/>
+                        <Button x:Name="BtnChangePrintoutDir" Grid.Column="2" Content="{DynamicResource s.SettingsReportChange}" Style="{StaticResource BtnOutline}"
+                                HorizontalAlignment="Right" Click="OnChangePrintoutDir"/>
+                    </Grid>
+                    <ui:ToggleSwitch x:Name="KeepConvertedBox" Content="{DynamicResource s.SettingsKeepConverted}"
+                                     OnContent="{DynamicResource s.ToggleOn}" OffContent="{DynamicResource s.ToggleOff}"
+                                     Margin="0,0,0,10" Checked="OnKeepConvertedChecked" Unchecked="OnKeepConvertedChecked"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource s.SettingsConvertDir}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                        <TextBlock x:Name="ConvertDirText" Grid.Column="1" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0"/>
+                        <Button x:Name="BtnChangeConvertDir" Grid.Column="2" Content="{DynamicResource s.SettingsReportChange}" Style="{StaticResource BtnOutline}"
+                                HorizontalAlignment="Right" Click="OnChangeConvertDir"/>
+                    </Grid>
+                </StackPanel>
+            </ui:CardExpander>
+
+            <!-- 打印统计目录行（展开收纳，与开关同组语义） -->
+            <ui:CardExpander ContentPadding="16,12,16,12" Padding="16,12" Margin="0,0,0,8">
+                <ui:CardExpander.Icon>
+                    <ui:SymbolIcon Symbol="DataUsage20" FontSize="20"/>
+                </ui:CardExpander.Icon>
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsReportDir}" FontSize="14" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <!-- V4.7 修整1：路径占左、按钮钉最右 -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="ReportDirText" Grid.Column="0" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0"/>
+                    <Button x:Name="BtnChangeReportDir" Grid.Column="1" Content="{DynamicResource s.SettingsReportChange}" Style="{StaticResource BtnOutline}"
+                            HorizontalAlignment="Right" Click="OnChangeReportDir"/>
+                </Grid>
+            </ui:CardExpander>
+
+            <!-- 其他：数据目录（修整23·五批：日志位置已去重，只留在关于页，这里不再重复一行） -->
+            <ui:CardExpander ContentPadding="16,12,16,12" Padding="16,12">
+                <ui:CardExpander.Icon>
+                    <ui:SymbolIcon Symbol="Info20" FontSize="20"/>
+                </ui:CardExpander.Icon>
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsOther}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsDataDirDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <StackPanel>
+                    <!-- V4.2：历史显示档位移至历史页工具栏（settings.json 键沿用） -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{DynamicResource s.DataDir}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="13"/>
+                        <TextBlock x:Name="DataDirText" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="460"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:CardExpander>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

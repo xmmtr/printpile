@@ -1,0 +1,40 @@
+﻿<UserControl x:Class="BatchPrintCN.TaskPlanPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- U2-6（V4.2.5）：任务规划从独立窗口改为 ContentDialog 的内容面板（07 方案 §4.6）。
+         底部三按钮维持 V4.2 修整三的闭环：修改设置（关闭规划 → 开打印设置 → 回主页） / 取消 / 确认打印。 -->
+    <Grid Margin="16,14,16,14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- V4.2 修整三：当前打印设置摘要 + 所用模板名 -->
+        <Border Grid.Row="0" Style="{StaticResource CardBorder}" Padding="12,8" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock x:Name="SettingsLine" FontSize="13" TextWrapping="Wrap"/>
+                <TextBlock x:Name="TemplateLine" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="SummaryText" Grid.Row="1" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="GroupPanel"/>
+        </ScrollViewer>
+
+        <!-- 底部：左＝修改设置（闭环回打印设置弹窗），右＝取消 / 确认打印 -->
+        <Grid Grid.Row="3" Margin="0,12,0,0">
+            <Button x:Name="BtnModify" Content="{DynamicResource s.ModifySettings}" HorizontalAlignment="Left"
+                    Width="110" FontSize="13" Style="{StaticResource BtnWarning}" Click="OnModify"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="BtnCancel" Content="{DynamicResource s.Cancel}" Width="100" Margin="0,0,10,0" FontSize="13"
+                        Style="{StaticResource BtnOutline}" Click="OnCancel"/>
+                <Button x:Name="BtnOk" Content="{DynamicResource s.ConfirmPrint}" Width="120" FontSize="13"
+                        Style="{StaticResource BtnSuccess}" Click="OnOk"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>
