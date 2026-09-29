@@ -1,0 +1,79 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- U1 换皮（V4.2.4）：Fluent 2 浅色色板（值取自 07-UI重设计方案-Fluent.md §三，与原型图同一套）。
+         键名全部沿用旧主题，页面 XAML 一行不改；渐变键改为 Fluent 平面填充（Win11 按钮不用渐变）。 -->
+    <!-- 修整3（V4.4）：表格内/外边框线色——需求方拍板 0.5 黑色细直线，浅色主题纯黑 -->
+    <SolidColorBrush x:Key="GridLineBrush" Color="#FF000000"/>
+    <SolidColorBrush x:Key="WindowBgBrush" Color="#F3F3F3"/>
+    <SolidColorBrush x:Key="SidebarBgBrush" Color="#ECECEC"/>
+    <SolidColorBrush x:Key="CardBgBrush" Color="#FBFBFB"/>
+    <SolidColorBrush x:Key="CardAltBgBrush" Color="#F9F9F9"/>
+    <SolidColorBrush x:Key="InputBgBrush" Color="#FBFBFB"/>
+    <SolidColorBrush x:Key="InputBgHoverBrush" Color="#F6F6F6"/>
+    <SolidColorBrush x:Key="LogBgBrush" Color="#FBFBFB"/>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#201F1E"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#616161"/>
+    <SolidColorBrush x:Key="TextFaintBrush" Color="#8A8A8A"/>
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="#FFFFFF"/>
+
+    <SolidColorBrush x:Key="AccentBrush" Color="#0067C0"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#1975C8"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#2F88D2"/>
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#EFF6FC"/>
+
+    <!-- Fluent 平面填充：原渐变键指向同一强调色，避免旧引用出渐变 -->
+    <SolidColorBrush x:Key="ActionGradientBrush" Color="#0067C0"/>
+    <SolidColorBrush x:Key="ActionGradientHoverBrush" Color="#1975C8"/>
+
+    <SolidColorBrush x:Key="BorderBrush" Color="#E5E5E5"/>
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="#D1D1D1"/>
+
+    <SolidColorBrush x:Key="DangerBrush" Color="#C42B1C"/>
+    <SolidColorBrush x:Key="DangerBorderBrush" Color="#E76E63"/>
+    <SolidColorBrush x:Key="DangerSoftBrush" Color="#FDF3F2"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#0F7B0F"/>
+    <SolidColorBrush x:Key="SuccessSoftBrush" Color="#E6F4E6"/>
+
+    <SolidColorBrush x:Key="GridHeaderBgBrush" Color="#F7F7F7"/>
+    <!-- V4.4 三批·修复A：表格数据行底色（浅色＝#FFFFFF，与修前 WPF-UI 隐式行样式的写死白底逐像素相同） -->
+    <SolidColorBrush x:Key="GridRowBgBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="GridRowHoverBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="GridRowSelectedBrush" Color="#EFF6FC"/>
+
+    <!-- 修整16（V4.4 四批）：状态列上色——已完成绿 / 失败红（打印中维持 TextPrimaryBrush，不在这里）。
+         拍板色板 Element Plus 绿 #67C23A、红 #F56C6C 在白底上只有 2.24 / 2.90，达不到开工令的 ≥4.5；
+         这里取同色相向黑压暗的 AA 档：绿 = #67C23A×0.60 → #3E7423（行底 5.63 / 悬停与选中底 5.17），
+         红 = #F56C6C×0.70 → #AC4C4C（行底 5.40 / 悬停与选中底 4.95）。深色主题用拍板提亮档变体
+         （#95D475 / #F89898，最差 6.65 / 5.53）。两份键名两侧必须同时存在（GridRowBgBrush 教训）。 -->
+    <SolidColorBrush x:Key="StatusOkTextBrush" Color="#3E7423"/>
+    <SolidColorBrush x:Key="StatusFailTextBrush" Color="#AC4C4C"/>
+
+    <!-- V4.5-1（决1，需求方 2026-09-25 拍板）：按钮字色按主题分治——浅色主题回退 v4.2.5 旧观感（三批修复B 之前
+         内容文字吃的是应用级隐式 TextBlock 的 TextPrimaryBrush，实测 #201F1E），深色主题维持三批验收值不回退。
+         机制一行未动（BtnContentTemplate 仍把字色钉在内容元素上，本地值压过隐式样式＝缺陷B 教训），只改色值来源。
+         浅底（白底 Default/Text）：浅 #201F1E（旧观感，压 #FFFFFF 对比度 15.95）/ 深 #606266（三批拍板值，压白底 5.90）。
+         实底（蓝 Primary / 绿 Success / 橙 Warning / 红 Danger / 灰 Info）：浅回旧深字 #201F1E
+         （压蓝 #409EFF 6.44、压绿 #67C23A 7.33、压红 #F56C6C 5.67，全部 ≥4.5，比原来的白字 2.55/2.87/3.15 反而更可读）、
+         深 #FFFFFF（三批拍板值）。悬停蓝字 #409EFF 是 Element Plus 拍板值（底色/边框层不动），两主题同值、单列一键备核。 -->
+    <SolidColorBrush x:Key="BtnLightAreaTextBrush" Color="#201F1E"/>
+    <SolidColorBrush x:Key="BtnSolidTextBrush" Color="#201F1E"/>
+    <SolidColorBrush x:Key="BtnAccentTextBrush" Color="#409EFF"/>
+
+    <SolidColorBrush x:Key="TipBgBrush" Color="#EFF6FC"/>
+    <SolidColorBrush x:Key="TipBorderBrush" Color="#D5E8F7"/>
+    <SolidColorBrush x:Key="TipTextBrush" Color="#0B5394"/>
+
+    <SolidColorBrush x:Key="ScrollerThumbBrush" Color="#C8C8C8"/>
+    <SolidColorBrush x:Key="FocusRingBrush" Color="#201F1E"/>
+    <SolidColorBrush x:Key="PreviewAreaBrush" Color="#F5F5F5"/>
+
+    <!-- V4.2.5 修整（需求方反馈）：① 按钮悬停/按下不再用库默认的近透明黑（#09000000 在浅色上等于没变、
+         看着像变纯白），改灰色渐变；同名键覆盖 WPF-UI 主题字典（我们的字典合并在后，优先级胜出）。
+         ② 主按钮底色换浅蓝（原 Win11 深蓝 #0067C0 偏重）。 -->
+    <LinearGradientBrush x:Key="ButtonBackgroundPointerOver" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FFE7E7E7" Offset="0"/>
+        <GradientStop Color="#FFD8D8D8" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FFCDCDCD"/>
+</ResourceDictionary>

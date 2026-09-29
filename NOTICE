@@ -1,0 +1,36 @@
+批量打印助手（BatchPrintCN）NOTICE
+==================================
+
+本产品随附组件声明
+------------------
+
+1. pdfium（PDF 渲染引擎）
+   - 项目：pdfium（Chromium PDF 引擎）
+   - 来源：bblanchon/pdfium-binaries 构建产物
+   - 许可证：Apache License 2.0（随附于本目录 LICENSE 文件）
+   - 用途：内置 PDF 打开/渲染/打印，300DPI 位图输出
+
+2. Microsoft .NET 8 / WPF
+   - 运行时：Microsoft.WindowsDesktop.App（自包含分发）
+   - 许可证：MIT License（.NET 运行时许可）
+
+3. 本机 Office/WPS 集成
+   - 本工具通过 COM 调用本机已安装的 Microsoft Office 或 WPS Office 打印
+     Word/Excel/PPT 文档；使用该功能需要用户自行拥有相应软件授权。
+
+著作权与独立性声明
+------------------
+本工具（批量打印助手 / BatchPrintCN）为独立开发的中文 Windows 批量打印
+工具，全部代码为本项目自行编写，与 Radixile Technology Solutions LLP
+的 PrintPool 软件（https://github.com/share2abhishek/Printpool）无代码
+复用、无资源复用关系，亦未使用其商标。项目文件夹曾命名为
+"Printpool汉化"仅为历史溯源用途，正式对外名称统一为"批量打印助手"。
+
+隐私声明
+--------
+本工具仅在本地执行打印任务：读取用户选择的文档并发送到本机打印机，
+不联网、不上传任何文档内容、不收集任何个人信息。日志仅写入程序所在目录的
+logs\ 子目录（便携模式；程序目录不可写时回退 %LOCALAPPDATA%\BatchPrintCN\logs）。
+
+版本：v4.5.0
+

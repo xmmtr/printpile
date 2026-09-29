@@ -1,0 +1,350 @@
+<ui:FluentWindow x:Class="BatchPrintCN.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:BatchPrintCN"
+        xmlns:prim="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="批量打印助手" Width="1120" Height="740" MinWidth="960" MinHeight="660"
+        WindowStartupLocation="CenterScreen" AllowDrop="True"
+        ResizeMode="CanResize"
+        Background="{DynamicResource WindowBgBrush}"
+        WindowBackdropType="None" ExtendsContentIntoTitleBar="True"
+        DragOver="OnDragOver" Drop="OnDrop" PreviewKeyDown="OnPreviewKeyDown">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <!-- U2-5（V4.2.5）：份数列 string ↔ NumberBox.Value 双向转换 -->
+        <local:CopiesTextToNumberConverter x:Key="CopiesNum"/>
+        <!-- F5（V4.4）：参数列"跟随全局 / 自定义 ●"与展开箭头的反向可见性 -->
+        <local:InverseBoolToVisibilityConverter x:Key="NotBoolToVis"/>
+        <!-- 修整7（V4.4）：页码范围单元格的灰字占位水印（值为空才显示） -->
+        <local:EmptyTextToVisibilityConverter x:Key="EmptyToVis"/>
+        <!-- 修整14/15（V4.4 二批）：列头样式 NoGripHeader、整行/整格边线 GridRowLine/GridCellLine、
+             单元格文字 CellText/CellTextName 全部上移到 Styles.xaml——历史页与主列表共用同一份，
+             两页观感严格一致（历史页在自检里会被独立实例化，资源必须放应用级才取得到）。 -->
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ============ U2-1 外壳：系统标题栏换成 WPF-UI 的 TitleBar（需求方拍板：样式以 WPF-UI 为准） ============ -->
+        <ui:TitleBar x:Name="AppTitleBar" Grid.Row="0" Title="批量打印助手">
+            <ui:TitleBar.Icon>
+                <ui:SymbolIcon Symbol="Print24"/>
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="216"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ============ 左侧导航：NavigationView 导航条（内容区仍由本窗口的四个 Host 切换，不引入 Frame 懒加载） ============ -->
+            <ui:NavigationView x:Name="Nav" Grid.Column="0"
+                               PaneDisplayMode="Left" IsBackButtonVisible="Collapsed"
+                               IsPaneToggleVisible="False" OpenPaneLength="216"
+                               SelectionChanged="OnNavSelectionChanged">
+                <ui:NavigationView.MenuItems>
+                    <ui:NavigationViewItem x:Name="NavPrint" Content="{DynamicResource s.NavPrint}" Tag="print" Click="OnNavItemClick">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="Print24"/>
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="NavHistory" Content="{DynamicResource s.NavHistory}" Tag="history" Click="OnNavItemClick">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="History24"/>
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <!-- V4.7 拆分1：「监视文件夹」（F7）不在本仓库范围，导航项与页面一并移除，
+                         导航恢复为 打印任务 / 历史 / 设置 / 关于 四项。 -->
+                    <ui:NavigationViewItem x:Name="NavSettings" Content="{DynamicResource s.NavSettings}" Tag="settings" Click="OnNavItemClick">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="Settings24"/>
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="NavAbout" Content="{DynamicResource s.NavAbout}" Tag="about" Click="OnNavItemClick">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="Info24"/>
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                </ui:NavigationView.MenuItems>
+                <ui:NavigationView.PaneFooter>
+                    <StackPanel Margin="18,0,18,14">
+                        <TextBlock Text="{DynamicResource s.AppSubtitle}" FontSize="11" Foreground="{DynamicResource TextFaintBrush}"/>
+                        <TextBlock x:Name="VersionLabel" FontSize="11" Foreground="{DynamicResource TextFaintBrush}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </ui:NavigationView.PaneFooter>
+            </ui:NavigationView>
+
+            <!-- ============ 右侧内容区 ============ -->
+            <Grid Grid.Column="1" Background="{DynamicResource WindowBgBrush}">
+
+                <!-- ===== 打印任务页 ===== -->
+                <Grid x:Name="PrintPanel" Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 工具栏（V4.2：打印模板控件已移入「打印设置」弹窗；U2-1：接 Fluent 图标） -->
+                    <WrapPanel Grid.Row="0" Margin="0,0,0,10">
+                        <Button x:Name="BtnAddFiles" Content="{DynamicResource s.AddFiles}" Style="{StaticResource BtnPrimary}" Margin="0,0,8,0" Click="OnAddFiles">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Add20" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+                        <Button x:Name="BtnAddFolder" Content="{DynamicResource s.AddFolder}" Style="{StaticResource BtnOutline}" Margin="0,0,8,0" Click="OnAddFolder">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Folder20" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+                        <Button x:Name="BtnRemove" Content="{DynamicResource s.RemoveSelected}" Style="{StaticResource BtnDangerPlain}" Margin="0,0,8,0" Click="OnRemove">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Dismiss20" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+                        <Button x:Name="BtnClear" Content="{DynamicResource s.ClearList}" Style="{StaticResource BtnDanger}" Click="OnClear">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Broom20" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+                    </WrapPanel>
+
+                    <!-- 页码提示条（U2-3：自绘 Border 换 WPF-UI InfoBar） -->
+                    <ui:InfoBar Grid.Row="1" IsOpen="True" IsClosable="False" Severity="Informational"
+                                Margin="0,0,0,10" Message="{DynamicResource s.PageHint}"/>
+
+                    <!-- 文件列表卡片 -->
+                    <Border Grid.Row="2" Style="{StaticResource CardBorder}" ClipToBounds="True">
+                        <!-- 修整10/13（V4.4 二批）：RowHeight 固定 → 长文件名不再撑高行（需求方说的"行高浮动"）；
+                             各列保留 MinWidth，列总宽超出可视区时由 DataGrid 自己的横向滚动条兜底（挤压变滚动）。
+                             修整14：DataGrid 自身网格线关闭，横线改整行底边、竖线改单元格右边（Styles.xaml 同口径两份样式），
+                             外框仍 0.5 细直线（浅色纯黑 / 深色近黑深灰，色值在主题字典 GridLineBrush）。
+                             修整5（V4.4）：CanUserResizeColumns=False + 自写列头模板去掉列宽把手（真机"黑色条状物"根因）。
+                             修整1（V4.4）：删掉 RowDetailsTemplate 与 RowDetailsVisibilityMode——逐文件参数改由「修改」按钮的弹窗承载。 -->
+                        <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  CanUserDeleteRows="False" SelectionMode="Extended" RowHeaderWidth="0" IsReadOnly="False"
+                                  HeadersVisibility="Column" EnableRowVirtualization="True" Margin="0"
+                                  RowHeight="36" UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  CanUserResizeColumns="False" ColumnHeaderStyle="{StaticResource NoGripHeader}"
+                                  RowStyle="{StaticResource GridRowLine}" CellStyle="{StaticResource GridCellLine}"
+                                  GridLinesVisibility="None" BorderThickness="0.5"
+                                  BorderBrush="{DynamicResource GridLineBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="52" MinWidth="52" CanUserSort="False" CanUserResize="False">
+                                    <DataGridTemplateColumn.HeaderTemplate>
+                                        <DataTemplate>
+                                            <CheckBox x:Name="HeaderCheck" IsThreeState="True" Padding="0" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center" Click="OnHeaderCheckClicked"
+                                                      IsEnabled="{Binding Idle, Source={x:Static local:PrintLock.Instance}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.HeaderTemplate>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <!-- V4.5-3：打印中锁交互不锁滚动——勾选框随 PrintLock.Idle 置灰，表格本体保持可用 -->
+                                            <CheckBox IsChecked="{Binding Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Padding="0" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center" Click="OnRowCheckClicked"
+                                                      IsEnabled="{Binding Idle, Source={x:Static local:PrintLock.Instance}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!-- 修整10：文件名单元格不折行、超出用省略号截断，悬浮 1 秒在右下角显全名（CellTextName）
+                                     修整16②（四批，需求方 2026-09-23 拍板方案②）：MinWidth 200→110——960 最小宽下要让整表不横向滚动，
+                                     星号列的保底是唯一可调项；实测 960 档文件名仍实得 118 DIP（约 9 个汉字），全名靠修整10 的悬浮提示。 -->
+                                <DataGridTextColumn x:Name="ColName" Header="{DynamicResource s.ColName}" Binding="{Binding Name}" IsReadOnly="True" Width="*" MinWidth="110"
+                                                    ElementStyle="{StaticResource CellTextName}"/>
+                                <!-- 修整16②（四批，方案②）：类型 76→64、页数 64→52，给 960 档腾出不滚的预算。
+                                     页数随后又回到 60：52 宽下英文列头 "Pages" 实测折成两行（列头是生成内容、
+                                     吃应用级隐式 TextBlock 的 Wrap，局部样式管不到＝#25 那条），从页码范围让 8 回来，
+                                     固定列合计不变（960 档文件名仍实得 118）。 -->
+                                <DataGridTextColumn Header="{DynamicResource s.ColType}" Binding="{Binding KindText}" IsReadOnly="True" Width="64"
+                                                    ElementStyle="{StaticResource CellText}"/>
+                                <DataGridTextColumn Header="{DynamicResource s.ColPages}" Binding="{Binding PagesText}" IsReadOnly="True" Width="60"
+                                                    ElementStyle="{StaticResource CellText}"/>
+                                <!-- 修整11（V4.4 二批）：「大小」列整列删除（s.ColSize 资源键两侧同步删），让出的宽度归文件名列 -->
+                                <!-- 修整2（V4.4）：份数列回退成与单元格同字体的 TextBox（VM 仍是 string，链路口径不变）；
+                                     修整12（二批）：输入框铺满列宽（不再"单独一小点"），与页码范围列同口径
+                                     修整1/B-2 起「份数」的唯一入口就是这一列（逐文件参数弹窗里不再有此项）。
+                                     修整17（四批）：列宽 68→90（MinWidth 60→72，需求方实测观感"一小点"）；
+                                     格子内容改竖向也铺满（GridCellLineFill，观感＝整个格子就是一个输入框）。
+                                     输入框仍透明底+无边框（修整2 口径）——底色就是行底色，天然随主题（三批 GridRowBgBrush 教训）；
+                                     模板换成 CellBoxFill（只留文本宿主），铺满后不再露库模板那圈圆角内框。 -->
+                                <DataGridTemplateColumn Header="{DynamicResource s.ColCopies}" Width="90" MinWidth="72"
+                                                        CellStyle="{StaticResource GridCellLineFill}">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox Text="{Binding Copies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource CellBoxFill}"
+                                                     IsEnabled="{Binding Idle, Source={x:Static local:PrintLock.Instance}}"
+                                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="0"
+                                                     Margin="0" HorizontalContentAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!-- 修整7（V4.4）：列头只留"页码范围"，原括号提示改成单元格里的灰字占位水印（不可选中，输入后隐藏、清空恢复）
+                                     修整12（二批）：与份数列同口径铺满列宽
+                                     修整16②（四批，方案②）：180/150 → 122/110，与类型/页数/文件名保底一起把 960 档列合计压进可视宽
+                                     （页数要 60 才不折英文列头，故本列从 130 再让 8，固定列合计仍 576、960 档文件名实得 118） -->
+                                <DataGridTemplateColumn Header="{DynamicResource s.ColRange}" Width="122" MinWidth="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox x:Name="RangeBox" Text="{Binding RangeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         IsEnabled="{Binding Idle, Source={x:Static local:PrintLock.Instance}}"
+                                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="0"
+                                                         BorderThickness="0" Background="Transparent" Padding="0" VerticalContentAlignment="Center"/>
+                                                <TextBlock Text="{DynamicResource s.ColRangeHint}" IsHitTestVisible="False" Focusable="False" Style="{StaticResource CellText}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
+                                                           Visibility="{Binding RangeText, Converter={StaticResource EmptyToVis}}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!-- 修整16（V4.4 四批）：状态列 150→76（MinWidth 110→76），让出的宽度按 FillStarColumn
+                                     口径自动归文件名列；文字仍走 CellText 的 NoWrap+CharacterEllipsis（超长只截断，不折行、不撑行高）。
+                                     上色挂在结构化状态种类上（CellTextStatus 的 DataTrigger）：已完成=绿、失败=红、
+                                     打印中=正常文字色，其余状态（待打印/已跳过/队列阻塞原因）维持现状。
+                                     失败态的「重试」按钮列宽不变（Auto），窄列里先挤压状态文字、按钮始终完整在位。
+                                     宽度实测定在 76（不是建议区间的 96~110）：长列表时纵向滚动条占 16 DIP，
+                                     内层可视只剩 854.4，份数列又要 +22（修整17b），96 会让列合计 870 顶出横向滚动，
+                                     硬约束①（1120 默认宽不滚 + 参数按钮一页可见）优先于建议区间。 -->
+                                <DataGridTemplateColumn Header="{DynamicResource s.ColStatus}" Width="76" MinWidth="76" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Status}" Style="{StaticResource CellTextStatus}" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Content="{DynamicResource s.Retry}" Style="{StaticResource BtnOutline}" Height="22" Padding="8,0"
+                                                        Visibility="{Binding CanRetry, Converter={StaticResource BoolToVis}}"
+                                                        IsEnabled="{Binding Idle, Source={x:Static local:PrintLock.Instance}}"
+                                                        Click="OnRetryClicked" Tag="{Binding}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!-- 修整1（V4.4）：参数列＝一个「修改」按钮（铅笔图标 + 文字，整体居中、不写死高度）。
+                                     该行已有自定义参数时按钮呈主色浅底（需求方 2026-09-20 拍板），跟随全局行＝白底默认样式。 -->
+                                <DataGridTemplateColumn x:Name="ColParams" Header="{DynamicResource s.ColParams}" Width="112" MinWidth="104" CanUserSort="False">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button x:Name="BtnEditParams" Style="{StaticResource BtnEdit}"
+                                                    IsEnabled="{Binding Idle, Source={x:Static local:PrintLock.Instance}}"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    Click="OnEditParams" Tag="{Binding}" ToolTip="{DynamicResource s.RowParamsToggleTip}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:SymbolIcon Symbol="Edit24" FontSize="13" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                    <!-- V4.4 三批·修复B：按钮内容是元素时不吃 Styles.xaml 那份默认模板，字色在元素上就地钉回按钮 Foreground -->
+                                                    <TextBlock Text="{DynamicResource s.EditParams}" FontSize="12" VerticalAlignment="Center" TextWrapping="NoWrap"
+                                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <!-- 底部控制卡片 -->
+                    <Border Grid.Row="3" Style="{StaticResource CardBorder}" Padding="16,12" Margin="0,10,0,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name="StatusText" Grid.Row="0" FontSize="13" Margin="0,0,0,8"/>
+
+                            <Grid Grid.Row="1" Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource s.Printer}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                                <ComboBox x:Name="PrinterBox" Grid.Column="1" VerticalAlignment="Center" SelectionChanged="OnPrinterChanged"/>
+                                <!-- F15（V4.3）：「打印机设置」移入设置页，主页只留「打印设置」 -->
+                                <Button x:Name="BtnRefresh" Content="{DynamicResource s.Refresh}" Grid.Column="2" Style="{StaticResource BtnOutline}" Margin="8,0,0,0" Click="OnRefresh"/>
+                                <Button x:Name="BtnPrintSetup" Content="{DynamicResource s.PrintSetup}" Grid.Column="3" Style="{StaticResource BtnOutline}" Margin="8,0,0,0" Click="OnPrintSetup"/>
+                                <Button x:Name="BtnStart" Content="{DynamicResource s.StartPrint}" Grid.Column="4" Style="{StaticResource BtnPrimary}" Margin="8,0,0,0" Click="OnStart"/>
+                                <Button x:Name="BtnStop" Content="{DynamicResource s.Stop}" Grid.Column="5" Style="{StaticResource BtnOutline}" Margin="8,0,0,0" IsEnabled="False" Click="OnStop"/>
+                            </Grid>
+
+                            <!-- 修整20（V4.4 五批）：进度条旁常显文件级计数与剩余时间预估——原来只有 6px 的条，
+                                 需求方反馈"难预估打印成功的时间"。条仍占主宽（星号列），文本在右侧不换行；
+                                 空闲/一轮结束后文本清空（条回到整宽），失败数用修整16 的状态红键（Run 上本地引用主题键，
+                                 不走继承＝缺陷B 教训）。 -->
+                            <Grid Grid.Row="2" Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ProgressBar x:Name="Progress" Height="6" VerticalAlignment="Center"
+                                             Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource AccentBrush}" BorderThickness="0"/>
+                                <TextBlock x:Name="ProgressText" Grid.Column="1" Margin="10,0,0,0" FontSize="12"
+                                           VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ===== 设置页 ===== -->
+                <Grid x:Name="SettingsHost" Visibility="Collapsed" Margin="16">
+                    <!-- 修整19（五批）：命名是为了打印中把设置页 F15 的打印机下拉与「打开打印机属性」一起锁（同一 LastPrinter 的另一端） -->
+                    <local:SettingsPage x:Name="PageSettings"/>
+                </Grid>
+
+                <!-- ===== 历史页 ===== -->
+                <Grid x:Name="HistoryHost" Visibility="Collapsed" Margin="16">
+                    <local:HistoryPage/>
+                </Grid>
+
+                <!-- ===== 关于页 ===== -->
+                <Grid x:Name="AboutHost" Visibility="Collapsed" Margin="16">
+                    <local:AboutPage/>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- ============ U2-2：Toast 换成 WPF-UI Snackbar 宿主（右下角，非模态） ============ -->
+        <!-- ============ U2-4：ContentDialog 宿主（覆盖全窗口；Toast 层在其上；4.3.0 用 ContentDialogHost，ContentPresenter 构造已过时） ============ -->
+        <ui:ContentDialogHost x:Name="RootContentDialog" Grid.Row="0" Grid.RowSpan="2" Panel.ZIndex="90"/>
+        <ui:SnackbarPresenter x:Name="ToastHost" Grid.Row="1" Panel.ZIndex="100"
+                              HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                              MaxWidth="420" Margin="0,0,20,20"/>
+    </Grid>
+</ui:FluentWindow>
