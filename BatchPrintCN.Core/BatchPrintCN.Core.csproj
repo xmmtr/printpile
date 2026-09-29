@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- M1 引擎层类库（2026-09-18，05-优化方案-v4.2.3）
+       原 work\BatchPrintCN 里的 6 个 <Compile Include Link> 引擎文件收编为真类库：
+       编译边界＝模块边界，WPF 与 Worker 都 ProjectReference 它，不再靠文件链接拼装。
+       程序集名 BatchPrintCN.Core，命名空间沿用 BatchPrintCN（调用方零改动）。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <AssemblyName>BatchPrintCN.Core</AssemblyName>
+    <RootNamespace>BatchPrintCN</RootNamespace>
+  </PropertyGroup>
+
+  <!-- M2 依赖精简：不再开 UseWindowsForms（打印通道只需 System.Drawing.Common，约 1.5MB），
+       发布目录因此不再拖 System.Windows.Forms*.dll（v4.2 实测 22MB 量级）。 -->
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="4.1.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="libs\pdfium.dll" Link="pdfium.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

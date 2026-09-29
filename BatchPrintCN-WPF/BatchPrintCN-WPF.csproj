@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>BatchPrintCNWpf</AssemblyName>
+    <RootNamespace>BatchPrintCN</RootNamespace>
+    <Description>Windows 批量打印工具——支持 PDF/Word/Excel/PPT/图片/文本批量打印；仅本机打印，不上传任何文档内容。</Description>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
+  <!-- M1：引擎层改 ProjectReference（原 6 条 Compile Include Link 已废除）；
+       pdfium.dll 随 Core 的 Content 传递到本工程输出目录。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\BatchPrintCN.Core\BatchPrintCN.Core.csproj" />
+  </ItemGroup>
+  <!-- V4.2.3 M3：合规文本随工程走（原来每次发布都要手抄进发布目录，容易漏改）；
+       版本行仍手工维护，由 selftest 的「版本一致」断言核对。
+       V4.7：许可改为仓库根的 PolyForm Noncommercial 1.0.0 随包，
+       原 Apache-2.0 LICENSE 不随本仓发布（已移出仓库，留档在临时目录）。 -->
+  <ItemGroup>
+    <Content Include="NOTICE" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\LICENSE-PolyForm.md" Link="LICENSE-PolyForm.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+  </ItemGroup>
+</Project>

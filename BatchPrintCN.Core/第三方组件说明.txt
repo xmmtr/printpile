@@ -1,0 +1,14 @@
+﻿第三方组件说明（便携版随附）
+
+1. pdfium.dll —— PDF 渲染内核
+   - 来源：https://github.com/bblanchon/pdfium-binaries （NuGet: bblanchon.PDFium.Win32）
+   - 许可证：Apache License 2.0
+   - 用途：本工具用它把 PDF 每页渲染成位图后调用 Windows 打印驱动输出。
+
+2. Office 文档（Word/Excel/PPT/TXT）打印依赖：
+   - 本工具不自带转换器；需在电脑上安装 LibreOffice（推荐，免费开源，MPL-2.0）或 Microsoft Office / WPS。
+   - 使用 LibreOffice 时，工具通过其命令行“soffice --headless --convert-to pdf”把文档转成 PDF 再打印。
+
+3. 本工具本体（BatchPrintCN）为个人测试用途，作者保留解释权；正式发布前请确认所用字体与图标无版权问题。
+
+版本：0.1.0 便携测试版（Windows 10/11 x64）

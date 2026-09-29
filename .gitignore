@@ -1,0 +1,12 @@
+# 构建产物（将来开放源码后生效）
+**/bin/
+**/obj/
+*.user
+.vs/
+
+# 运行期数据（便携模式在程序目录生成，属用户数据）
+settings.json
+logs/
+data/
+printout/
+tmp/

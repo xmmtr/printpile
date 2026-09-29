@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <AssemblyName>BatchPrintCNWorker</AssemblyName>
+    <RootNamespace>BatchPrintCN</RootNamespace>
+  </PropertyGroup>
+  <!-- M1：OfficeExport/AppPaths/FileLogger 改由 Core 提供（原 3 条 Compile Include Link 已废除）；
+       必须与主程序一样 self-contained 发布且 runtime 版本一致，否则被同目录 hostfxr 干扰（V3.2 踩过）。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\BatchPrintCN.Core\BatchPrintCN.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MiniPdf" Version="0.42.0" />
+  </ItemGroup>
+</Project>
