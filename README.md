@@ -1,23 +1,38 @@
 # 批量打印助手（BatchPrint）
 
-![Version](https://img.shields.io/badge/version-4.8.0.0-blue) ![Runtime](https://img.shields.io/badge/.NET-8.0%20WPF-5C2D91) ![Platform](https://img.shields.io/badge/Windows-10%2F11%20x64-0078D6) [English](README_EN.md) | 简体中文
+![Latest Release](https://img.shields.io/github/v/release/xmmtr/BatchPrint) ![Platform](https://img.shields.io/badge/Windows-10%2F11%20x64-0078D6) ![Runtime](https://img.shields.io/badge/.NET-8.0%20WPF-5C2D91) ![License](https://img.shields.io/badge/License-PolyForm%20NC%201.0.0-orange) [English](README_EN.md) | 简体中文
 
-![License](https://img.shields.io/badge/License-PolyForm%20NC%201.0.0-orange)
+> **把 PDF、Word、Excel、PPT、图片、文本一股脑拖进来，按顺序批量打完。**
+> 份数、页码范围、双面、缩放逐文件可控；全程本机处理，文档永不上传。
 
-**批量打印助手**是一款 Windows 桌面批量打印工具：把 PDF、Word、Excel、PPT、图片、文本拖进主窗口，就能按顺序批量打完，参数一次配齐、逐文件可控。本仓库是其**完整源码**，以 PolyForm Noncommercial 1.0.0 许可开源。当前源码版本 **4.8.0.0**，是**可正常检查更新**的版本（更新已接入官方服务器，并通过完整真机链路验证）。
+![主界面（浅色主题）](docs/screenshots/main-light.png)
 
-## 目录
+**这是一款给办公室人群的 Windows 批量打印工具**：几十份混格式文件一次排队、逐个可控、失败不影响其余；支持本机 Office/WPS 无感转 PDF；打印历史、参数模板、检查更新一应俱全。本仓库为其**完整源码**。
 
-- [功能特性](#功能特性)
-- [版本沿革](#版本沿革)
-- [检查更新机制](#检查更新机制)
-- [下载与安装](#下载与安装)
-- [从源码构建](#从源码构建)
-- [目录结构](#目录结构)
-- [隐私与安全](#隐私与安全)
-- [许可证](#许可证)
-- [常见问题](#常见问题)
-- [English](#english)
+## ✨ 核心亮点
+
+- **全格式混批**：PDF / Word / Excel / PPT / 图片 / 文本 统一排队顺序打印，PDF 走内置 pdfium 引擎直打；
+- **逐文件可控**：每个文件单独设份数、页码范围（`1-3`、`1,3-5`）、双面、缩放、色彩，也可整批统一；
+- **失败隔离**：单个失败不影响其余文件，可单独重试，已成功的不重复打；
+- **打印模板 + 历史**：常用参数一键套用；SQLite 本地历史可检索、一键重打；
+- **检查更新**：软件内一键检查并下载新版本（只读请求，不上传任何本机信息）；
+- **中英双语 / 浅深主题 / 便携化**：配置、日志、数据全在程序目录，拷走即带走。
+
+## 📥 下载
+
+| 方式 | 说明 |
+| --- | --- |
+| [Releases 最新版](https://github.com/xmmtr/BatchPrint/releases/latest) | 安装包（.exe）与便携版（.zip），免安装解压即用 |
+| 软件内检查更新 | 已装用户：关于页 →「检查更新」一键升级 |
+| 官网 | 批量打印助手官网（下载 / 在线 PDF 工具 / 反馈） |
+
+## 🖼 界面预览
+
+| 浅色主题 | 深色主题 |
+| --- | --- |
+| ![浅色](docs/screenshots/main-light.png) | ![深色](docs/screenshots/main-dark.png) |
+
+## 📖 详细文档
 
 ## 功能特性
 
