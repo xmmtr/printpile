@@ -6,6 +6,8 @@
 
 Current source version **4.8.0.0** — the release where **update check actually works** (it queries the official update server, verified end-to-end on real hardware).
 
+> 🔗 **Official website**: <https://batchprint-site.pages.dev> (latest downloads · online PDF tools · feedback · commercial licensing)
+
 [简体中文](README.md) | **English**
 
 ## Table of Contents
@@ -57,7 +59,7 @@ Current source version **4.8.0.0** — the release where **update check actually
 | v3.1 / v3.2 | 2026-09-16 | COM/MiniPdf dual engine, engine auto-detection, silent Print-to-PDF | Archived |
 | v4.0 – v4.5 | from 2026-09-17 | Print templates, SQLite history, per-file parameter cards, print-time lock, ETA | Archived |
 | **V4.7 (4.7.0.0)** | 2026-09-27 | **First standalone open-source release**: split from the main line, PolyForm license, update-check framework (pointed at a local dev endpoint at the time) | Archived |
-| **V4.8 (4.8.0.0, current source)** | 2026-09-28 | **Update check fully working**: default update server switched to the official endpoint (`https://batchprint-api.xmmtr.workers.dev`), verified end-to-end; official Inno Setup installer published | ✅ Current |
+| **V4.8 (4.8.0.0, current source)** | 2026-09-28 | **Update check fully working**: default update server switched to the official endpoint (`https://batchprint-api.xmmtr.workers.dev`; since V4.9 the update server has moved to the official site `https://batchprint-site.pages.dev` — the old workers.dev endpoint is kept for historical reference only), verified end-to-end; official Inno Setup installer published | ✅ Current |
 
 ## Update Check
 
@@ -68,6 +70,7 @@ Current source version **4.8.0.0** — the release where **update check actually
 
 ## Download & Install
 
+- **Official website** <https://batchprint-site.pages.dev>: latest downloads, online PDF tools, feedback, and commercial licensing;
 - **GitHub Releases** (this repository): official installer (Inno Setup) and portable zip;
 - Installer: double-click to install (defaults to `%LOCALAPPDATA%\Programs\BatchPrint`, no admin rights needed, Start-menu & desktop shortcuts, built-in uninstaller);
 - Portable zip: extract anywhere and run `BatchPrintCNWpf.exe`;
