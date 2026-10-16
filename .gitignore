@@ -1,0 +1,11 @@
+# 构建产物
+bin/
+obj/
+.vs/
+publish/
+
+# 会话与本地工具残留
+.mimosa/
+
+# 用户本地配置
+*.user

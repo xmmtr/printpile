@@ -1,0 +1,151 @@
+<!--
+This file is part of PrintPile (https://printpile.cn).
+
+Copyright (C) 2026 the PrintPile developers
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<UserControl x:Class="BatchPrintCN.RowParamsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:BatchPrintCN"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <!-- 修整1（V4.4）：逐文件参数改弹窗——原行内 RowParamsCard 的控件与逻辑搬进这里，由 ContentDialog 承载。
+         弹窗内 8 项（双面/色彩/纸张/缩放模式+百分比/每页版数/小册子/奇偶页/纸盒），每项首选项都是「跟随全局」；
+         份数与页码范围不进弹窗（B-2：列表列是唯一入口）。点「保存」才写回该行覆盖，取消/Esc 不写回。
+         文案一律 XAML 声明式 DynamicResource（A-3：切语言即时刷新）；置灰在每次打开时按当时全局设置求值（A-2）。
+         控件不写死高度（全局 TextBlock 会换行，写死尺寸=文字被裁——V4.2.4 U1 同源坑）。 -->
+    <UserControl.Resources>
+        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid Margin="0,2,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 说明 + 当前自定义项 -->
+        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <ui:SymbolIcon Symbol="Document20" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <TextBlock Text="{DynamicResource s.RowParamsNote}" FontSize="12" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+        </StackPanel>
+        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" x:Name="CustomMark" Text="{DynamicResource s.Custom}"
+                   FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource ElPrimaryBrush}"
+                   Visibility="Collapsed" Margin="0,0,0,8"/>
+
+        <!-- 双面 / 色彩 -->
+        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,12,8">
+            <TextBlock Text="{DynamicResource s.PsDuplex}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdDuplexBox" Width="320" HorizontalAlignment="Left" SelectionChanged="OnChanged">
+                <ComboBoxItem Content="{DynamicResource s.FollowGlobal}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsSimplex}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsLongEdge}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsShortEdge}"/>
+            </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,8">
+            <TextBlock Text="{DynamicResource s.PsColorMode}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdColorBox" Width="260" HorizontalAlignment="Left" SelectionChanged="OnChanged">
+                <ComboBoxItem Content="{DynamicResource s.FollowGlobal}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsColor}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsBlackWhite}"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- 纸张 / 缩放模式 -->
+        <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,12,8">
+            <TextBlock Text="{DynamicResource s.PsPaper}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdPaperBox" Width="280" HorizontalAlignment="Left" SelectionChanged="OnChanged"/>
+        </StackPanel>
+        <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,0,0,8">
+            <TextBlock Text="{DynamicResource s.PsScaleMode}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdScaleBox" Width="260" HorizontalAlignment="Left" SelectionChanged="OnChanged">
+                <ComboBoxItem Content="{DynamicResource s.FollowGlobal}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsScaleFit}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsScaleNone}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsScaleShrink}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsScaleStretch}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsScaleCustom}"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- 缩放百分比 / 每页版数 -->
+        <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,12,8">
+            <TextBlock Text="{DynamicResource s.PsScalePercent}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <Grid Width="280" HorizontalAlignment="Left">
+                <ui:NumberBox x:Name="RdScalePctBox" Minimum="1" Maximum="400" MaxDecimalPlaces="0"
+                              SpinButtonPlacementMode="Hidden" TextChanged="OnChanged"/>
+                <TextBlock x:Name="RdScalePctHint" Text="{DynamicResource s.FollowGlobal}" Margin="8,0,26,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" IsHitTestVisible="False"/>
+            </Grid>
+        </StackPanel>
+        <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,8">
+            <TextBlock Text="{DynamicResource s.PsPagesPerSheet}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdPagesBox" Width="260" HorizontalAlignment="Left" SelectionChanged="OnChanged"/>
+        </StackPanel>
+
+        <!-- 小册子 / 奇偶页 -->
+        <StackPanel Grid.Row="5" Grid.Column="0" Margin="0,0,12,8">
+            <TextBlock Text="{DynamicResource s.PsBooklet}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdBookletBox" Width="280" HorizontalAlignment="Left" SelectionChanged="OnChanged">
+                <ComboBoxItem Content="{DynamicResource s.FollowGlobal}"/>
+                <ComboBoxItem Content="{DynamicResource s.ToggleOn}"/>
+                <ComboBoxItem Content="{DynamicResource s.ToggleOff}"/>
+            </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,8">
+            <TextBlock Text="{DynamicResource s.PsParity}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdParityBox" Width="260" HorizontalAlignment="Left" SelectionChanged="OnChanged">
+                <ComboBoxItem Content="{DynamicResource s.FollowGlobal}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsParityAll}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsParityOdd}"/>
+                <ComboBoxItem Content="{DynamicResource s.PsParityEven}"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- 纸盒（B-3：不再有「自动」中间档，「跟随全局」即打印机默认纸盒） -->
+        <StackPanel Grid.Row="6" Grid.Column="0" Margin="0,0,12,8" VerticalAlignment="Top">
+            <TextBlock Text="{DynamicResource s.PsPaperSource}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+            <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="RdSourceBox" Width="280" HorizontalAlignment="Left" SelectionChanged="OnChanged"/>
+        </StackPanel>
+
+        <!-- 页脚：左侧重置，右侧取消 + 保存（保存=绿色 BtnSuccess） -->
+        <Grid Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,6,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="BtnRowReset" Grid.Column="0" Content="{DynamicResource s.RowParamsReset}" Style="{StaticResource BtnText}"
+                    HorizontalAlignment="Left" Click="OnReset"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="BtnCancel" Content="{DynamicResource s.Cancel}" Style="{StaticResource BtnOutline}" Margin="0,0,8,0" Click="OnCancel"/>
+                <Button x:Name="BtnSave" Content="{DynamicResource s.RowParamsSave}" Style="{StaticResource BtnSuccess}" Click="OnSave"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

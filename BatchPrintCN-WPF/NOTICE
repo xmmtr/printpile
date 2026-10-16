@@ -1,0 +1,60 @@
+﻿PrintPile · 批量打印（BatchPrintCN）NOTICE
+==================================
+
+本产品随附组件声明
+------------------
+
+1. pdfium（PDF 渲染引擎）
+   - 项目：pdfium（Chromium PDF 引擎）
+   - 来源：bblanchon/pdfium-binaries 构建产物
+   - 许可证：Apache License 2.0（该第三方组件自身的许可，全文见其上游仓库；
+     本产品以二进制 pdfium.dll 随包分发，其条款不影响本程序源码的许可口径）
+   - 用途：内置 PDF 打开/渲染/打印，300DPI 位图输出
+
+2. Microsoft .NET 8 / WPF
+   - 运行时：Microsoft.WindowsDesktop.App（自包含分发）
+   - 许可证：MIT License（.NET 运行时许可）
+
+3. 本机 Office/WPS 集成
+   - 本工具通过 COM 调用本机已安装的 Microsoft Office 或 WPS Office 打印
+     Word/Excel/PPT 文档；使用该功能需要用户自行拥有相应软件授权。
+
+著作权与独立性声明
+------------------
+本工具（PrintPile / BatchPrintCN）为独立开发的中文 Windows 批量打印
+工具，全部代码为本项目自行编写，与 Radixile Technology Solutions LLP
+的 PrintPool 软件（https://github.com/share2abhishek/Printpool）无代码
+复用、无资源复用关系，亦未使用其商标。项目文件夹曾命名为
+"Printpool汉化"仅为历史溯源用途，正式对外名称 2026-10-10 起统一为"PrintPile"（中文副标"批量打印"，展示形态"PrintPile · 批量打印"）。
+
+隐私声明
+--------
+本工具仅在本地执行打印任务：读取用户选择的文档并发送到本机打印机，
+不联网、不上传任何文档内容、不收集任何个人信息。日志仅写入程序所在目录的
+logs\ 子目录（便携模式；程序目录不可写时回退 %LOCALAPPDATA%\BatchPrintCN\logs）。
+
+本产品自身的许可
+------------------
+PrintPile 源码与二进制以 GNU General Public License v3.0（简称 GPLv3）发布，
+全文见同目录 LICENSE（该文件逐字保持 gnu.org 原文不动，故本产品的版权声明落在这一份）。
+
+    PrintPile · 批量打印
+    Copyright (C) 2026 PrintPile
+    This program is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation, either version 3 of the License.
+    This program is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+    for more details. You should have received a copy of the GNU General
+    Public License along with this program. If not, see https://www.gnu.org/licenses/.
+
+您可以自由运行、研究、修改与再分发本软件（用于任何用途皆可），
+条件是衍生版本必须以同样条款公开源码——选 GPLv3 而不是宽松许可，就是为了这一条：
+不允许任何人拿去改一改就闭源转卖。
+
+V1.2.0（73 号令）起，程序内不再有码、验签、试用期与功能上限：打印模板数量、
+历史记录条数、导出 CSV、监视文件夹（F7）等全部功能对所有用户一视同仁地开放。
+
+版本：v1.2.0
+

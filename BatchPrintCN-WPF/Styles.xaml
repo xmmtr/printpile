@@ -1,0 +1,722 @@
+﻿<!--
+This file is part of PrintPile (https://printpile.cn).
+
+Copyright (C) 2026 the PrintPile developers
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:BatchPrintCN"
+                    xmlns:core="clr-namespace:BatchPrintCN;assembly=BatchPrintCN.Core"
+                    xmlns:prim="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+
+    <!-- ============ 通用文本 ============ -->
+    <Style TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <!-- ============ 卡片容器（圆角） ============ -->
+    <Style x:Key="CardBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource CardBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+    <!-- ==================================================================
+         V4.4 二批·修整14：表格线（主列表 + 历史页共用，两页严格同口径）
+         修整3 一批的做法是把线宽 0.5 交给 DataGrid 自己的 GridLinesVisibility=All，真机反馈"一段一段"。
+         根因（本机 DPI 120 = 125% 下算给你看）：
+           ① 0.5 DIP 细线 = 0.625 物理像素，本身跨两个设备像素分色；
+           ② WPF 的 DataGrid 内部网格线是"相邻单元格各画半根"（每边 0.25 DIP = 0.3125 px），
+              两半落在哪两个设备像素上取决于各自单元格边界的取整结果 → 同一条横线在不同列交界处深浅不一、时有时无；
+           ③ 单元格边界 x 多为分数（星号列宽 = 可视宽 - 固定列 - 余数）→ 每段线的起止点各自抗锯齿 → 断口。
+         改法：横向线不再由单元格拼，改成"整行一条底边"（GridRowLine，一根线一个元素，天然横贯）；
+               竖向线改成"单元格右边框"（GridCellLine，同列各行的边界 x 相同 → 上下相接成一条）；
+               DataGrid 自身网格线关掉（GridLinesVisibility=None），外框仍用 BorderThickness=0.5；
+               全表开 UseLayoutRounding + SnapsToDevicePixels，让边界落到设备像素格点上。
+         色值沿用拍板：浅色纯黑 / 深色近黑深灰（主题字典 GridLineBrush），线宽仍 0.5 DIP。
+         ================================================================== -->
+
+    <!-- 整行底边 = 横向分隔线（横贯整行，不经单元格拼接）。
+         V4.4 三批·修复A（验收缺陷A）：这里必须显式给行底色。实测（V44Fix3深色缺陷定位.txt）：
+         WPF-UI 的隐式 DataGridRow 样式把 Background 写死成不透明白 #FFFFFF/a255，深色主题字典切到
+         Theme/Dark.xaml、ApplicationBackgroundBrush 已经是 #202020 之后，行底仍然是白的（本样式 BasedOn 它，
+         把那份白底继承下来），而列头是我们自己的 NoGripHeader（透明底）、单元格 GridCellLine 是 Transparent →
+         深色下"列头正常 + 数据行白底 + 行下空区透出深底"三段割裂；文字按 TextPrimaryBrush 走深色＝白，
+         于是白底白字（ZCode 取样的 #5C5C5C 是白字压白底后的抗锯齿边）。
+         改法：行底色交给我们自己的主题键 GridRowBgBrush——浅色 #FFFFFF（与修前逐像素相同，浅色观感零变化）、
+         深色 #272727（卡片色，开工令 修复A a 许可的口径）。线元（0.5 底边 GridLineBrush）一律不动。 -->
+    <Style x:Key="GridRowLine" TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+        <Setter Property="Background" Value="{DynamicResource GridRowBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GridLineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,0.5"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+    </Style>
+
+    <!-- 单元格右边框 = 竖向分隔线；最右一列的右边框与表格外框重合，不会多出一条。
+         实测（修整14 探针）：WPF-UI 的 DataGridCell 模板不绑 BorderThickness（样式里设了 0,0,0.5,0 且画笔色正确，
+         渲染出来 0 条竖线），库的模板帮不上这个"内边框"，所以这里自带一份极简单元格模板——
+         只补竖线度量，底色/选中色仍走属性继承与触发器（需求方 2026-09-20 拍板过的例外口径："我们的模板只在必须补
+         语义色/度量时才加"）。选中的浅主色用主题字典 AccentSoftBrush，与全站一致。 -->
+    <Style x:Key="GridCellLine" TargetType="DataGridCell">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GridLineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0.5,0"/>
+        <Setter Property="Padding" Value="6,0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" UseLayoutRounding="{TemplateBinding UseLayoutRounding}">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ 修整10/13：表格单元格文字（不折行 + 超出截断，中英都要不折） ============
+         全局隐式 TextBlock 样式是 TextWrapping=Wrap（其它页面依赖，不动它），这里按单元格口径局部收掉。 -->
+    <!-- 78 号令·B1：下拉框（ComboBox）文字一律单行＋超出省略号，悬停出全文气泡——与上面 CellText/CellTextTip
+         同一口径，只是这里管 ComboBox。根因＝ContentPresenter 给字符串项生成的 TextBlock 会吃到第 9 行那份
+         隐式 TextBlock 样式（Wrap），长打印机名/模板名于是折成两行，而框高只有 30 → 第二行被竖向切掉，
+         需求方真机看到的"下拉文字显示不全"就是这个（PreviewWindow.cs:415 那条"强制 Height=24 会把选中文字
+         压到边框上"的旧注释是同一问题的另一次现身）。本模板同时管选中值显示区与展开项两处。 -->
+    <DataTemplate x:Key="ComboTextTemplate">
+        <TextBlock Text="{Binding}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                   VerticalAlignment="Center"
+                   ToolTip="{Binding}" ToolTipService.InitialShowDelay="1000" ToolTipService.BetweenShowDelay="0"/>
+    </DataTemplate>
+
+    <Style x:Key="CellText" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="TextWrapping" Value="NoWrap"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <!-- 修整10：文件名列悬浮 1 秒后在单元格右下角显示全名（ToolTip 内容 = 绑定值本身，截断与否都提示）。
+         WPF 的 PlacementMode 没有 BottomRight（那是 WinForms 的枚举），故用 Right + 下压偏移把提示框固定压到
+         单元格右下角旁；位置对所有行一致，偏移值要微调只改这一处。 -->
+    <Style x:Key="CellTextName" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+        <Setter Property="ToolTip" Value="{Binding Name}"/>
+        <Setter Property="ToolTipService.InitialShowDelay" Value="1000"/>
+        <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
+        <Setter Property="ToolTipService.Placement" Value="Right"/>
+        <Setter Property="ToolTipService.VerticalOffset" Value="14"/>
+    </Style>
+
+    <!-- ============ 修整21b（V4.4 五批）：会截断的单元格文本一律带悬浮提示（历史页五列共用） ============
+         提示内容绑「自身 Text」而不是某个具体属性——一份样式管所有列（主页文件名那份 CellTextName 是二批定稿的
+         逐列绑定，不动它）。TextTrimming 只影响绘制、Text 里仍是完整值，所以气泡里永远是全文；
+         空值不出气泡（否则悬空显一个空框）。延迟/落点与主页 CellTextName 严格同口径：1 秒、Right + 下压 14。 -->
+    <Style x:Key="CellTextTip" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+        <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        <Setter Property="ToolTipService.InitialShowDelay" Value="1000"/>
+        <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
+        <Setter Property="ToolTipService.Placement" Value="Right"/>
+        <Setter Property="ToolTipService.VerticalOffset" Value="14"/>
+        <Style.Triggers>
+            <Trigger Property="Text" Value="">
+                <Setter Property="ToolTip" Value="{x:Null}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ 修整16（V4.4 四批）：状态列上色 ============
+         颜色只认 RowVm.StatusKind（结构化状态种类），绝不认状态文案（G2 口径：改文案、切英文都不能让上色失效）。
+         为什么写在 DataTrigger 而不是父级 Foreground：应用级隐式 TextBlock 样式自带 Foreground=TextPrimaryBrush，
+         样式 setter 压过属性继承（三批缺陷B 两次实测），只在单元格/行上设前景对内容文字不起作用——
+         颜色必须落到内容元素自己的样式上；触发器优先级高于样式 setter，所以盖得住那份隐式样式。
+         打印中（Printing）按需求方口径＝正常文字色（浅色深字/深色白字，浅色下纯白不可读），故不进触发器。
+         色键两主题各一份（浅色 AA 压暗档 / 深色提亮档），DynamicResource 让切主题即时生效（VM 不持 Brush）。 -->
+    <Style x:Key="CellTextStatus" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding StatusKind}" Value="{x:Static local:RowStatusKind.Done}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusOkTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding StatusKind}" Value="{x:Static local:RowStatusKind.Failed}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
+            </DataTrigger>
+            <!-- V4.9 版本内修整·修6：范围无效（引擎按既有口径回退打了全部）＝黄，与绿/红同一机制、同样只认结构化状态种类 -->
+            <DataTrigger Binding="{Binding StatusKind}" Value="{x:Static local:RowStatusKind.RangeInvalid}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusWarnTextBrush}"/>
+            </DataTrigger>
+            <!-- 45 号·改1：内容超界（版面体检发现会被裁切）＝同一支黄，机制与修6 完全同款；只告知，不代改文档 -->
+            <DataTrigger Binding="{Binding StatusKind}" Value="{x:Static local:RowStatusKind.ContentOverflow}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusWarnTextBrush}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ V4.9 版本内修整（打印范围反馈）·修2：页数列联动上色 ============
+         与状态列同一口径：颜色只认 RowVm.RangeState（RangeVerdict 的结构化结论），不认文案——
+         改文案、切英文都不会让上色翻车。空/未填范围维持默认字色（现状观感零变化），故不进触发器。
+         Unknown* 两态是"总页数还不知道"（Office 文件要等打印时转换）：只按写法能否解析出页码给绿/红，
+         X/N 的数字等打印完成回填总页数后自动升级成三态。 -->
+    <Style x:Key="CellTextPages" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RangeState}" Value="{x:Static core:RangeMark.Ok}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusOkTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding RangeState}" Value="{x:Static core:RangeMark.UnknownOk}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusOkTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding RangeState}" Value="{x:Static core:RangeMark.Partial}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusWarnTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding RangeState}" Value="{x:Static core:RangeMark.Invalid}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding RangeState}" Value="{x:Static core:RangeMark.UnknownBad}">
+                <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
+            </DataTrigger>
+        </Style.Triggers>
+        <!-- 修5：页数格悬停显示与气泡同源的完整结论（"X/N 页"放不下全称，这里给得下） -->
+        <Setter Property="ToolTip" Value="{Binding RangeHint}"/>
+        <Setter Property="ToolTipService.InitialShowDelay" Value="1000"/>
+        <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
+        <Setter Property="ToolTipService.Placement" Value="Right"/>
+        <Setter Property="ToolTipService.VerticalOffset" Value="14"/>
+    </Style>
+
+    <!-- ============ V4.9 版本内修整·修4：范围格无效输入标红 ============
+         零有效页码（含"总页数未知但写法解析不出页码"）→ 文字红；聚焦时再加一圈红框；
+         改回有效或清空即复原。认的是 RowVm.IsRangeInvalid（由 RangeState 派生的结构化布尔），不认文案。
+         BasedOn 库的隐式 TextBox 样式：四个 Setter 与修整前写在 RangeBox 标签上的四个属性逐一对应，
+         观感零变化（只有真的无效时才上色），换进样式的唯一目的是让触发器有地方挂。 -->
+    <Style x:Key="CellBoxRange" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsRangeInvalid}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
+            </DataTrigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsRangeInvalid}" Value="True"/>
+                    <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Self}}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource StatusFailTextBrush}"/>
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ V4.9 版本内修整·修3：聚焦气泡（浮层） ============
+         铁律＝行高锁死，所以解析详情一律不进单元格，只走这一层 Popup 与修5 的 ToolTip。
+         底色取卡片键、描边取网格线键（两主题现成，不写死颜色）；文本允许折行但整块只有一行半高，
+         页码清单在 RangeVerdict.PageList 里就截到 8 段 + 省略号，绝不靠气泡撑高表格。 -->
+    <Style x:Key="RangeBubbleCard" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource CardBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GridLineBrush}"/>
+        <Setter Property="BorderThickness" Value="0.5"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="9,6"/>
+        <Setter Property="MaxWidth" Value="360"/>
+    </Style>
+    <Style x:Key="RangeBubbleText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="LineHeight" Value="17"/>
+    </Style>
+
+    <!-- ============ V4.5-2（决2）：历史页「状态」列上色 ============
+         历史页的状态值来自 SQLite（HistoryRow.Success 是结构化布尔，StatusText 只是它的当前语言文案），
+         所以颜色同样只认结构化字段：成功=绿、失败=红，与主页修整16 共用 StatusOkTextBrush/StatusFailTextBrush
+         两枚主题键（浅压暗档/深提亮档），深浅主题都不会翻车。基样式取 CellTextTip（不折行+截断+悬浮全文），
+         不另起一份观感。 -->
+    <Style x:Key="CellTextHistStatus" TargetType="TextBlock" BasedOn="{StaticResource CellTextTip}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Success}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource StatusOkTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Success}" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ 修整17（V4.4 四批）：份数列内容竖向也铺满 ============
+         GridCellLine 的 VerticalContentAlignment=Center 让 ContentPresenter 只给输入框"它自己想要的高度"（≈20），
+         所以修整12 之后是"水平铺满、垂直一小条"（需求方实测观感）。这里只覆盖对齐一项，让格子内容区整个交给输入框；
+         共享的 GridCellLine（历史页 + 其余列同一份样式对象）一行不动，按列挂 CellStyle。 -->
+    <Style x:Key="GridCellLineFill" TargetType="DataGridCell" BasedOn="{StaticResource GridCellLine}">
+        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+    </Style>
+
+    <!-- ============ 修整17（V4.4 四批）：格内输入框的极简模板 ============
+         份数格竖向铺满后（GridCellLineFill），库那份隐式 TextBox 模板里的圆角内框就露出来了：
+         它有自己的高度（≈32）且贴在格子下半部，浅深两主题的 3 倍特写里都能看到一条多余的圆角轮廓
+         （见 份数格铺满特写-*.png 修前形态）。这里只换模板、不换字体：BasedOn 库的隐式样式保住字号字族，
+         模板里只留「透明底 + PART_ContentHost（文本宿主，缺它不能输入）」，底色/边框一律走 TemplateBinding，
+         于是输入框真的等于整个格子，且底色天然随行底走主题（三批 GridRowBgBrush 教训：不写死任何白底）。 -->
+    <Style x:Key="CellBoxFill" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Padding="{TemplateBinding Padding}"
+                                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ 修整14/15：列头（两页共用） ============
+         修整5（V4.4）：真机"开始打印后标题列旁出现黑色条状物"经可视树取证 = WPF-UI 列头模板里的列宽调整把手
+         （PART_Left/RightHeaderGripper → 内含 4x16 深色矩形，颜色跟随列头前景，89% 黑；列表禁用后变 36% 黑，
+         所以点开始打印时尤其显眼）。CanUserResizeColumns=False 并不能收掉它（实测把手仍在），本表列宽一律
+         固定/星号、把手没有交互价值，故按库的结构（HeaderBorder + ContentPresenter + 排序箭头）自写模板、只去掉两侧把手。
+         修整15（二批，需求方 2026-09-20 追加）：列标题文字水平居中 + 加粗——两页都用本样式，一处改两页生效；
+           FontWeight 走属性继承进列头里的文字（历史页"⇅ 图标+文字"的 StackPanel 作为整体被居中的 ContentPresenter
+           收缩包裹，图标与文字一起居中）；
+           本样式从 MainWindow.Window.Resources 移进 Styles.xaml：历史页在自检里会被独立实例化渲染，
+           原来用 DynamicResource 取窗口资源时取不到（列头退回库样式，两页观感不一致），移到应用级后两边同一份。
+           列头文字"不折行"实测无法用样式表达到（WPF 给 ContentPresenter 生成的 TextBlock 找隐式样式时，
+           Style.Resources / ControlTemplate.Resources 两处都不生效，只有全局那份管得上），所以改由
+           ①列头 Height=40 固定（真折行也只会被裁、不会顶高表格）+ ②自检按"量出来的行高≤一行"卡死（中英都量）。 -->
+    <Style x:Key="NoGripHeader" TargetType="prim:DataGridColumnHeader">
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GridLineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0.5,0.5"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="prim:DataGridColumnHeader">
+                    <Border x:Name="HeaderBorder" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            <ui:SymbolIcon x:Name="SortIcon" Grid.Column="1" FontSize="12" Margin="5,0,0,0"
+                                           VerticalAlignment="Center" Visibility="Collapsed" Symbol="ChevronUp24"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="SortDirection" Value="Ascending">
+                            <Setter TargetName="SortIcon" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="SortDirection" Value="Descending">
+                            <Setter TargetName="SortIcon" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="SortIcon" Property="Symbol" Value="ChevronDown24"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource CardAltBgBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ Element Plus 按钮体系（V4.2.5 需求方拍板，照 Element Plus「基础用法」） ============
+         色板：蓝 Primary #409EFF / 绿 Success #67C23A / 橙 Warning #E6A23C / 红 Danger #F56C6C / 灰 Info #909399；
+         悬停=本色变浅、按下=本色加深；白底 Default=#FFFFFF 底 + #DCDFE6 边 + #606266 字，
+         悬停变蓝字 #409EFF + 浅蓝底 #ECF5FF + 边 #C6E2FF。规格：高 32 / 字号 14 / 圆角 4 / 边 1 / 水平内边距 15。
+         模板自带（不再依赖 WPF-UI 按钮模板），禁用统一 50% 透明。 -->
+    <!-- 52 号令·步骤 4（D-15）：Element Plus 按钮色板（El*Brush 20 枚）已整体移入 ThemesLightTheme/DarkTheme.xaml，
+         随主题令牌变（accent→Primary 组、status.*→Success/Warning/Danger 组、派生 hover/active）。本文件不再有裸色板。 -->
+
+    <!-- V4.4 三批·修复B（验收缺陷B，U1 换皮以来的存量）：把拍板字色钉到"按钮内容文字"本身。
+         实测两次试错（V44Fix3深色缺陷定位.txt）：① 只在 BtnOutline 等样式上设 Foreground=#606266 + 模板里
+         TextElement.Foreground 继承 —— 内容文字拿到的仍是应用级隐式 TextBlock 样式的 TextPrimaryBrush
+         （浅色实测 #201F1E、深色实测 #FFFFFF，白底按钮对比度 1.00）；② 改在 ControlTemplate.Resources 里
+         再放一份隐式 TextBlock 样式 —— 模板生成的内容不认那一份，实测同样无效（与二批列头那次同一句话）。
+         唯一稳的口子是给内容元素一份"本地值"（本地值 > 样式 setter）：按钮体系默认 ContentTemplate 里那份
+         TextBlock 的 Foreground 用 Binding 指回按钮自己的 Foreground，于是三态触发器继续生效
+         （悬停 #409EFF、按下 #3A8EE6、朴素红悬停转白字），且深浅两主题拿到的是同一份固定色值。
+         自带 ContentTemplate 的按钮（主页工具栏带图标的四个）不吃这份默认值，在各自模板里钉同一句绑定。
+         V4.5-1（决1）改的就是"按钮自己的 Foreground 从哪儿取"：不再写死 Element Plus 单一色值，
+         改取三枚主题键（BtnLightAreaTextBrush 浅底字色 / BtnSolidTextBrush 实底字色 / BtnAccentTextBrush 悬停蓝字），
+         浅色字典给 v4.2.5 旧观感的深字、深色字典给三批验收的拍板值 —— 钉到内容元素这套骨架一行未动。 -->
+    <DataTemplate x:Key="BtnContentTemplate">
+        <TextBlock Text="{Binding}" VerticalAlignment="Center"
+                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+    </DataTemplate>
+    <!-- 只在"内容是字符串、且按钮没自带 ContentTemplate"时才套上面那份（选择器见 UiConverters.cs）：
+         按钮内容是元素（历史页刷新「⟳」、打印设置「存为/删除模板」、参数列「修改」的图标+文字 StackPanel）
+         或按钮自带模板（主页工具栏带图标的四个）时交回 WPF 原样渲染——实测把模板硬套到元素内容上，
+         字面会变成 "System.Windows.Controls.TextBlock"，而套在图标模板上会把图标吃掉。 -->
+    <local:BtnContentTemplateSelector x:Key="BtnContentSelector" TextTemplate="{StaticResource BtnContentTemplate}"/>
+
+    <!-- 按钮基础：Element Plus 简单模板（圆角边框 + 居中内容），三态由各语义样式的 Style.Triggers 驱动 -->
+    <Style x:Key="BtnBase" TargetType="Button">
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="15,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"
+                                          ContentTemplateSelector="{StaticResource BtnContentSelector}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 主按钮 Primary：蓝（添加文件 / 开始打印 / 确定 / 导出 CSV）
+         V4.5-1：字色走主题键 BtnSolidTextBrush（浅色＝旧观感深字 #201F1E，压蓝底实测 6.44；
+         深色＝三批白字不回退）。底色/边框仍是 Element Plus 拍板蓝，一行未动。 -->
+    <Style x:Key="BtnPrimary" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{DynamicResource ElPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ElPrimaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource BtnSolidTextBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElPrimaryHoverBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElPrimaryHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElPrimaryActiveBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElPrimaryActiveBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 白底 Default（添加文件夹 / 刷新 / 打印机设置 / 打印设置 / 取消 / 停止 / 存为模板 …）
+         V4.5-1：常态字色走主题键 BtnLightAreaTextBrush（浅色＝旧观感 #201F1E，压白底 15.95；
+         深色＝三批拍板 #606266，压白底 5.90）；悬停蓝字/按下深蓝字是 Element Plus 拍板配色，
+         浅色深主题同值，收进 BtnAccentTextBrush 一枚键里备核（悬停浅蓝底 #ECF5FF 配 #409EFF 实测 2.32，
+         属"拍板色板层"未擅改 → 数字已在 V45一批按钮字色定位.txt 里报给需求方）。 -->
+    <Style x:Key="BtnOutline" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{DynamicResource ElDefaultBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ElDefaultBorderBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource BtnLightAreaTextBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElDefaultHoverBgBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElDefaultHoverBorderBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource BtnAccentTextBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Foreground" Value="#3A8EE6"/>
+                <Setter Property="BorderBrush" Value="#3A8EE6"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 文字按钮（删模板等）：透明底，悬停变蓝字浅蓝底（V4.5-1 同口径走主题键） -->
+    <Style x:Key="BtnText" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource BtnLightAreaTextBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource BtnAccentTextBrush}"/>
+                <Setter Property="Background" Value="#F5F7FA"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 修整1（V4.4）：主列表「参数」列的「修改」按钮。默认=白底 Default；该行已有自定义参数时改主色浅底
+         （#ECF5FF 底 + #C6E2FF 边 + #409EFF 字，需求方 2026-09-20 拍板：保留"哪些行改过参数"的可见性）。
+         不写死高度（BtnBase 的 32 改成 Auto，靠 Padding 撑），避免表格里行高被顶开。 -->
+    <Style x:Key="BtnEdit" TargetType="Button" BasedOn="{StaticResource BtnOutline}">
+        <Setter Property="Height" Value="Auto"/>
+        <Setter Property="Padding" Value="10,4"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsCustom}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElDefaultHoverBgBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElDefaultHoverBorderBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ElPrimaryBrush}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 成功按钮 Success：绿（任务规划「确认打印」）——V4.5-1 字色走 BtnSolidTextBrush -->
+    <Style x:Key="BtnSuccess" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{DynamicResource ElSuccessBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ElSuccessBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource BtnSolidTextBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElSuccessHoverBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElSuccessHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElSuccessActiveBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElSuccessActiveBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 警告按钮 Warning：橙（任务规划「修改设置」）——V4.5-1 字色走 BtnSolidTextBrush -->
+    <Style x:Key="BtnWarning" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{DynamicResource ElWarningBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ElWarningBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource BtnSolidTextBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElWarningHoverBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElWarningHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElWarningActiveBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElWarningActiveBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 危险按钮 Danger：红实底（清空列表）——V4.5-1 字色走 BtnSolidTextBrush -->
+    <Style x:Key="BtnDanger" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{DynamicResource ElDangerBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ElDangerBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource BtnSolidTextBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElDangerHoverBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElDangerHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElDangerActiveBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElDangerActiveBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 危险按钮·朴素红（移除选中，需求方拍板与清空列表区分）：白底 + 红边 + 红字，悬停变实底红 + 白字
+         V4.5-1：常态"白底红字 #F56C6C"是需求方拍板值，一行未动；只有悬停/按下变成实底红之后的字色
+         改走 BtnSolidTextBrush（浅色＝旧观感深字、深色＝白字），与其余实底按钮同一口径。 -->
+    <Style x:Key="BtnDangerPlain" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ElDangerBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource ElDangerBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElDangerBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElDangerBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource BtnSolidTextBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElDangerActiveBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElDangerActiveBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource BtnSolidTextBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 信息按钮 Info：灰（备用）——V4.5-1 字色走 BtnSolidTextBrush -->
+    <Style x:Key="BtnInfo" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+        <Setter Property="Background" Value="{DynamicResource ElInfoBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ElInfoBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource BtnSolidTextBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElInfoHoverBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElInfoHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ElInfoActiveBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ElInfoActiveBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ 导航项（RadioButton 胶囊） ============ -->
+    <Style x:Key="NavRadio" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="Margin" Value="10,2"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="4" Padding="14,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Ellipse x:Name="dot" Width="8" Height="8" Fill="Transparent" Margin="0,0,10,0"/>
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource CardAltBgBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                            <Setter TargetName="dot" Property="Fill" Value="{DynamicResource AccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ 输入框 TextBox（圆角） ============ -->
+
+    <!-- ============ 密码框 ============ -->
+
+    <!-- ============ 下拉框 ComboBox（圆角） ============ -->
+
+    <!-- ============ 单选/复选（圆点样式） ============ -->
+
+    <!-- ============ DataGrid（圆角外框由外层 Border 包裹） ============ -->
+
+    <!-- ============ 滚动条（圆角细条） ============ -->
+
+    <!-- ============ 提示条 ============ -->
+    <Style x:Key="TipBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource TipBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TipBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12,7"/>
+    </Style>
+
+    <!-- ============ 分组框 ============ -->
+    <Style TargetType="GroupBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GroupBox">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border x:Name="HeaderHost" Background="{DynamicResource GridHeaderBgBrush}" CornerRadius="6,6,0,0" Padding="8,3" Margin="0,0,0,-1">
+                            <ContentPresenter ContentSource="Header" TextElement.Foreground="{DynamicResource TextSecondaryBrush}" TextElement.FontWeight="SemiBold" TextElement.FontSize="12"/>
+                        </Border>
+                        <Border Grid.Row="1" Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,0,1,1" CornerRadius="0,0,6,6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ 进度条（圆角） ============ -->
+
+    <!-- ============ 圆角窗口内容模板（无边框窗口用） ============
+         用法：窗口设 WindowStyle=None AllowsTransparency=True Background=Transparent，
+         Content 用一个带此 Style 的 Border 包裹，即可得到圆角 + 投影 + 描边。 -->
+    <Style x:Key="RoundedWindowBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource WindowBgBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.25" Color="#000000"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ 自定义标题栏关闭按钮 ============ -->
+    <Style x:Key="WindowCloseButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Width" Value="34"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="4">
+                        <Path x:Name="x" Data="M 0,0 L 10,10 M 10,0 L 0,10" Stroke="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"
+                              StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource DangerSoftBrush}"/>
+                            <Setter TargetName="x" Property="Stroke" Value="{DynamicResource DangerBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource DangerBrush}"/>
+                            <Setter TargetName="x" Property="Stroke" Value="#FFFFFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ Toast 提示弹窗（蓝/绿/红） ============ -->
+    <Style x:Key="ToastBorder" TargetType="Border">
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="16,14"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.28" Color="#000000"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="ToastIcon" TargetType="Ellipse">
+        <Setter Property="Width" Value="36"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+    </Style>
+</ResourceDictionary>

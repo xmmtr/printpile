@@ -1,0 +1,62 @@
+<!--
+This file is part of PrintPile (https://printpile.cn).
+
+Copyright (C) 2026 the PrintPile developers
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<Project>
+
+  <!-- M3 版本与配置集中管理（2026-09-18，05-优化方案-v4.2.3）
+       版本号一处改、三工程全生效；各 csproj 不再单独写 Version/FileVersion。
+       NOTICE 里的版本仍手工写，由自检断言核对两者一致。
+       V4.7：从主版本线分叉整理的独立版本。
+       V4.8：版本内演进（33 号升级计划）——检查更新默认路由切生产后端（V4.8-1）。
+       V4.9：V4.8 功能改进与优化版（39 号开工令）——关闭按钮行为三选 + 问题反馈 + 打开打印机属性加固；不含任何 PDF 功能。
+       V4.9.2：45 号开工令三项改进——转换后超界检测警告 + 逐文件作业摘要日志 + 打印预览（4.9.1 跳号不用）。
+       V4.9.3：49 号开工令关于页改版——标题区+四按钮行（官网/GitHub/数据目录/日志）+ 自动检查更新 + 更新渠道 + 立即检查内联化（4.9.1 跳号惯例延续）。
+       V1.0.0：产品化起点（51 号开工令 2026-10-04）——自 4.9.3.0 基座分叉；两码制（机器码＋Ed25519 签名码，本地离线验签）
+       + 范围解锁（模板 5→无限、历史 200→无限＋导出 CSV，统一状态源）；公告系统顺延不做。
+       52 号令（2026-10-06）：ProductFlavor 产品线标记——commercial＝更新清单走 /updates/manifest-commercial.json；
+       28 号双仓劈分时把本属性改回 "free" 即切回免费清单，一处改、全工程生效（UpdateChecker 运行时读程序集元数据）。
+       V1.1.0（72 号开工令 2026-10-12）：本目录＝v1.0.0 树的整体副本，此后 batchprint-free 冻结只读；
+       头牌功能 F7「监视文件夹」在此线上开发。D-20 三位数口径：新功能线＝第二位进位，
+       且 v1.0.0 已于 2026-10-11 官网公开对外，故本版**实升** 1.1.0.0（58 号"发布前保持 1.0.0.0"条款作废）。
+       V1.2.0（73 号开工令 2026-10-15，D-36 推翻 D-24）：全面 free & open（许可证改 GPLv3）——码制、验签、解锁状态、
+       限时体验期、功能限额整体拆除，所有功能无条件下全量可用；本目录＝v1.1.0 已提交树的整体副本，此后 v1.1.0 冻结只读。
+       ProductFlavor 属性值**维持 commercial 不动**：它只是 UpdateChecker 的清单文件名分流开关（值改就要动 UpdateChecker，
+       违反 73 号 Rule 3 的"打印链路与更新链路零改动"），与本令取消的收费模式无关。 -->
+  <PropertyGroup>
+    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <!-- 52 号令 D-14：更新清单分流开关，只许取 commercial / free 两个值（见上方 V1.2.0 段的不动理由）。 -->
+    <ProductFlavor>commercial</ProductFlavor>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <Company>PrintPile 开发组</Company>
+    <Product>PrintPile</Product>
+    <Copyright>Copyright © 2026 PrintPile 开发组</Copyright>
+    <!-- 守护：警告即失败（方案 §M6 断言③）。若将来引入新分析器告警，先修再放行，不用 #pragma 压。 -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- ProductFlavor 带进程序集元数据：UpdateChecker 分流与自检断言都从这里读（D-14：不出现第二份硬编码）。 -->
+  <ItemGroup>
+    <AssemblyMetadata Include="ProductFlavor" Value="$(ProductFlavor)" />
+  </ItemGroup>
+
+</Project>

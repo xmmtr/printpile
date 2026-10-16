@@ -1,0 +1,490 @@
+﻿<!--
+This file is part of PrintPile (https://printpile.cn).
+
+Copyright (C) 2026 the PrintPile developers
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- ===== English (en-US) ===== -->
+    <sys:String x:Key="s.AppTitle">PrintPile · Batch Print</sys:String>
+    <!-- 64 号·B 实修（与 zh 同口径）：空内容的 sys:String 元素会让 WPF 去调 String 的无参构造（不存在）→ 首个 DynamicResource
+         解析即 XamlParseException＝开机必崩；故值取零宽空格 U+200B（非 XML 空白、不会被裁掉），视觉＝无字幕。注释刻意不写键属性字面量。 -->
+    <sys:String x:Key="s.AppSubtitle">&#8203;</sys:String>
+
+    <sys:String x:Key="s.NavPrint">Print Jobs</sys:String>
+    <sys:String x:Key="s.NavSettings">Settings</sys:String>
+    <sys:String x:Key="s.NavAbout">About</sys:String>
+    <sys:String x:Key="s.NavHistory">History</sys:String>
+    <sys:String x:Key="s.SaveTemplate">Save Template</sys:String>
+    <sys:String x:Key="s.DeleteTemplate">Delete</sys:String>
+    <sys:String x:Key="s.TemplateTip">Print template: select to apply a whole set of the settings below</sys:String>
+    <sys:String x:Key="s.TemplatePrompt">Template name:</sys:String>
+    <sys:String x:Key="s.TemplatePlaceholder">Select template…</sys:String>
+    <sys:String x:Key="s.TemplateLabel">Template: </sys:String>
+    <sys:String x:Key="s.MsgNoTemplate">Please select a template in the list first.</sys:String>
+    <sys:String x:Key="s.MsgEmptyTemplate">This template was saved by an older build and contains no settings. Please set the options again and tap "Save Template".</sys:String>
+    <sys:String x:Key="s.TemplateSaved">Template saved: </sys:String>
+    <sys:String x:Key="s.TemplateApplied">Template applied: </sys:String>
+    <sys:String x:Key="s.TemplateDeleted">Template deleted: </sys:String>
+    <sys:String x:Key="s.NoTemplate">(no template)</sys:String>
+    <sys:String x:Key="s.HistoryTitle">Print History</sys:String>
+    <sys:String x:Key="s.HistoryAllPrinter">All printers</sys:String>
+    <sys:String x:Key="s.HistoryRangeAll">All time</sys:String>
+    <sys:String x:Key="s.HistoryRangeToday">Today</sys:String>
+    <sys:String x:Key="s.HistoryRangeWeek">Last 7 days</sys:String>
+    <sys:String x:Key="s.HistoryEmpty">No print records yet. History appears after printing.</sys:String><sys:String x:Key="s.HistoryLimit">Show</sys:String><sys:String x:Key="s.HistoryLimit200">200</sys:String><sys:String x:Key="s.HistoryLimit100">100</sys:String><sys:String x:Key="s.HistoryLimit10d">10 days</sys:String><sys:String x:Key="s.HistoryLimitHidden">Hidden</sys:String><sys:String x:Key="s.HistoryLoading">Loading…</sys:String><sys:String x:Key="s.HistoryHidden">History is hidden (records are still saved).</sys:String>    
+    <sys:String x:Key="s.HistoryCount">{0} record(s)</sys:String>
+    <sys:String x:Key="s.HistoryName">File Name</sys:String>
+    <sys:String x:Key="s.HistoryStatus">Status</sys:String>
+    <sys:String x:Key="s.HistorySearch">Search file or folder</sys:String>
+    <sys:String x:Key="s.HistoryFolder">Folder</sys:String>
+    <sys:String x:Key="s.HistoryExport">Export CSV</sys:String>
+    <sys:String x:Key="s.HistoryCountFiltered">{0} of {1} match</sys:String>
+    <sys:String x:Key="s.HistoryExportEmpty">No records match the current filter to export.</sys:String>
+    <sys:String x:Key="s.HistoryExportDone">{0} record(s) exported to {1}</sys:String>
+    <sys:String x:Key="s.HistoryExportFail">Export failed: </sys:String>
+
+    <sys:String x:Key="s.AddFiles">Add Files</sys:String>
+    <sys:String x:Key="s.AddFolder">Add Folder</sys:String>
+    <sys:String x:Key="s.RemoveSelected">Remove Selected</sys:String>
+    <sys:String x:Key="s.ClearList">Clear List</sys:String>
+    <sys:String x:Key="s.Printer">Printer:</sys:String>
+    <sys:String x:Key="s.Refresh">Refresh</sys:String>
+    <sys:String x:Key="s.PrinterSetup">Printer Setup</sys:String>
+    <sys:String x:Key="s.PrintSetup">Print Settings</sys:String>
+    <sys:String x:Key="s.StartPrint">Start Print</sys:String>
+    <sys:String x:Key="s.Stop">Stop</sys:String>
+
+    <sys:String x:Key="s.PageHint">Page range hint: leave empty = all pages; use English format, e.g. 1-3 (pages 1-3) or 1,3-5 (page 1 and pages 3-5). Copies: enter a number.</sys:String>
+    <sys:String x:Key="s.ColName">File Name</sys:String>
+    <sys:String x:Key="s.ColType">Type</sys:String>
+    <sys:String x:Key="s.ColPages">Pages</sys:String>
+    <!-- 修整11（V4.4 二批）：与 zh-CN 同步删除 s.ColSize（主列表不再显示「大小」列） -->
+    <sys:String x:Key="s.ColTime">Time</sys:String>
+    <sys:String x:Key="s.ColCopies">Copies</sys:String>
+    <sys:String x:Key="s.ColRange">Page Range</sys:String>
+    <!-- 修整7（V4.4）：列头只留标题，原括号提示改成单元格里的灰字占位水印 -->
+    <sys:String x:Key="s.ColRangeHint">empty = all, e.g. 1-3,5</sys:String>
+    <sys:String x:Key="s.ColStatus">Status</sys:String>
+    <sys:String x:Key="s.CheckedCount">{0} checked / {1} total</sys:String>
+    <sys:String x:Key="s.StatusSkipped">Skipped</sys:String>
+    <sys:String x:Key="s.LogSkipped">{0} unchecked file(s) skipped.</sys:String>
+    <sys:String x:Key="s.StatusQueued">Queued</sys:String>
+    <sys:String x:Key="s.StatusPrintingRow">Printing</sys:String>
+    <sys:String x:Key="s.StatusDoneRow">Done</sys:String>
+    <sys:String x:Key="s.StatusFailedRow">Failed</sys:String>
+    <sys:String x:Key="s.QueuePaperOut">paper out</sys:String>
+    <sys:String x:Key="s.QueueOffline">printer offline</sys:String>
+    <sys:String x:Key="s.QueueDeleting">cancelling</sys:String>
+    <sys:String x:Key="s.QueueBlocked">blocked (paper jam / error, check the printer)</sys:String>
+    <!-- 修整20（V4.4 五批）：底栏进度区的文件级计数与剩余时间预估（与中英两侧一一对应） -->
+    <sys:String x:Key="s.ProgCount">File {0} of {1}</sys:String>
+    <sys:String x:Key="s.ProgEta">≈ {0} remaining</sys:String>
+    <sys:String x:Key="s.ProgFail">{0} failed</sys:String>
+    <sys:String x:Key="s.ProgEtaSec">{0} s</sys:String>
+    <sys:String x:Key="s.ProgEtaMS">{0} min {1} s</sys:String>
+    <sys:String x:Key="s.ProgEtaHS">{0} h {1} min</sys:String>
+    <sys:String x:Key="s.Retry">Retry</sys:String><sys:String x:Key="s.ConfirmPrint">Confirm Print</sys:String><sys:String x:Key="s.TaskPlanSummary">{0} file(s) → {1} task(s), please confirm:</sys:String>
+    <sys:String x:Key="s.PlanSettings">Current print settings: </sys:String>
+    <sys:String x:Key="s.ModifySettings">Edit settings</sys:String>
+    <sys:String x:Key="s.TaskPlanTitle">Task Plan</sys:String>
+
+    <sys:String x:Key="s.StatusReady">Ready ({0} file(s) in list)</sys:String>
+    <sys:String x:Key="s.StatusPrinting">Printing… ({0} file(s))</sys:String>
+    <sys:String x:Key="s.StatusStopping">Stopping… (stops after current file)</sys:String>
+    <sys:String x:Key="s.StatusDone">Done: {0} succeeded, {1} failed</sys:String>
+
+    <sys:String x:Key="s.MsgNoFiles">Please add files to print first.</sys:String>
+    <sys:String x:Key="s.MsgNoChecked">No files checked. Please check the files you want to print.</sys:String>
+    <sys:String x:Key="s.MsgNoPrinter">No printer detected on this machine.</sys:String>
+    <sys:String x:Key="s.MsgSelectPrinter">Please select a printer first.</sys:String>
+    <sys:String x:Key="s.MsgPrinterSetupError">Cannot open printer setup: </sys:String>
+    <sys:String x:Key="s.MsgExitConfirm">A print job is still running. Exit anyway?</sys:String>
+    <sys:String x:Key="s.ExitTitle">Exit</sys:String>
+    <sys:String x:Key="s.PrintSettingsUpdated">Print settings updated: </sys:String>
+    <sys:String x:Key="s.Error">Error</sys:String>
+    <sys:String x:Key="s.Hint">Notice</sys:String>
+    <sys:String x:Key="s.Warning">Warning</sys:String>
+    <sys:String x:Key="s.Ok">OK</sys:String>
+    <sys:String x:Key="s.Cancel">Cancel</sys:String>
+    <sys:String x:Key="s.Yes">Yes</sys:String>
+    <sys:String x:Key="s.No">No</sys:String>
+
+    <sys:String x:Key="s.LogStartHint">Tip: drag PDF/Word/Excel/PPT/image/text files into the window to add them; Office documents print silently via PDF conversion with no dialogs.</sys:String>
+    <sys:String x:Key="s.LogAdded">{0} file(s) added ({1} total).</sys:String>
+    <sys:String x:Key="s.LogRemoved">{0} file(s) removed.</sys:String>
+    <sys:String x:Key="s.LogCleared">List cleared.</sys:String>
+    <sys:String x:Key="s.LogAddFailed">Add failed: </sys:String>
+    <sys:String x:Key="s.LogEnd">=== Print finished: {0} succeeded, {1} failed ===</sys:String>
+
+    <sys:String x:Key="s.SettingsTitle">Settings</sys:String>
+    <sys:String x:Key="s.SettingsLanguage">Language / 语言</sys:String>
+    <sys:String x:Key="s.SettingsLanguageDesc">Switch the UI language. Takes effect immediately.</sys:String>
+    <sys:String x:Key="s.LangZh">简体中文</sys:String>
+    <sys:String x:Key="s.LangEn">English</sys:String>
+    <sys:String x:Key="s.SettingsTheme">Appearance Mode</sys:String>
+    <sys:String x:Key="s.SettingsThemeDesc">Switch between light and dark mode instantly.</sys:String>
+    <sys:String x:Key="s.ThemeLight">Light Mode</sys:String>
+    <sys:String x:Key="s.ThemeDark">Dark Mode</sys:String>
+
+    <sys:String x:Key="s.AboutTitle">About</sys:String>
+    <sys:String x:Key="s.AboutVersion">Version</sys:String>
+    <sys:String x:Key="s.AboutIndependent">This tool is an independently developed Chinese Windows batch printing utility with no code/resource reuse from Radixile PrintPool.</sys:String>
+    <sys:String x:Key="s.AboutPrivacy">Privacy: prints locally only; no network access, no document content is uploaded.</sys:String>
+    <sys:String x:Key="s.AboutLogs">Log location</sys:String>
+    <sys:String x:Key="s.AboutOpenLog">Open Log Folder</sys:String>
+
+    <sys:String x:Key="s.PdfPasswordTitle">PDF is Encrypted</sys:String>
+    <sys:String x:Key="s.PdfPasswordHint">This PDF is encrypted. Enter the password to print:</sys:String>
+
+    <!-- ===== Print settings dialog ===== -->
+    <sys:String x:Key="s.PsTitle">Print Settings</sys:String>
+    <sys:String x:Key="s.PsDuplex">Duplex</sys:String>
+    <sys:String x:Key="s.PsSimplex">Single-sided</sys:String>
+    <sys:String x:Key="s.PsLongEdge">Duplex · Long-edge binding (book)</sys:String>
+    <sys:String x:Key="s.PsShortEdge">Duplex · Short-edge binding (calendar)</sys:String>
+    <sys:String x:Key="s.PsColorMode">Color Mode</sys:String>
+    <sys:String x:Key="s.PsColor">Color</sys:String>
+    <sys:String x:Key="s.PsBlackWhite">Black &amp; White (grayscale)</sys:String>
+    <sys:String x:Key="s.PsOrientation">Orientation</sys:String>
+    <sys:String x:Key="s.PsAutoOrient">Auto (per document)</sys:String>
+    <sys:String x:Key="s.PsPortrait">Portrait</sys:String>
+    <sys:String x:Key="s.PsLandscape">Landscape</sys:String>
+    <sys:String x:Key="s.PsPaper">Paper Size</sys:String>
+    <sys:String x:Key="s.PsPaperDefault">(default A4)</sys:String>
+    <sys:String x:Key="s.PsPagesPerSheet">Pages per Sheet</sys:String>
+    <sys:String x:Key="s.PsPagesOne">1 per sheet (default)</sys:String>
+    <sys:String x:Key="s.PsPagesN">{0} per sheet</sys:String>
+    <sys:String x:Key="s.PsPagesHint">For invoices/ID photos to fit multiple pages on one sheet (PDF)</sys:String>
+    <sys:String x:Key="s.PsScale">Scale</sys:String>
+    <sys:String x:Key="s.PsFitPage">Fit to page (match selected paper)</sys:String>
+    <sys:String x:Key="s.PsCustomScale">Custom scale:</sys:String>
+    <sys:String x:Key="s.PsScalePercent">Scale %</sys:String>
+    <sys:String x:Key="s.PsPercentRange">% (1-400)</sys:String>
+    <sys:String x:Key="s.PsNote">Note: duplex/color/paper/pages-per-sheet/scale fully apply to PDF and Office documents (converted silently to PDF); images print single-sided.</sys:String>
+    <sys:String x:Key="s.PsPreviewTitle">Print Preview (schematic)</sys:String>
+
+    <!-- ===== Toast alerts ===== -->
+    <sys:String x:Key="s.ToastSuccess">Print finished, all succeeded.</sys:String>
+    <sys:String x:Key="s.ToastSuccessCount">{0} file(s) in total.</sys:String>
+    <sys:String x:Key="s.ToastFail">Print failed. Check the printer connection or the file.</sys:String>
+    <sys:String x:Key="s.ToastFailCount">{0} file(s) failed.</sys:String>
+    <sys:String x:Key="s.ToastNewFeature">New Feature</sys:String>
+
+    <!-- ===== v2.4 new: pause/resume + report + folder picker ===== -->
+    <sys:String x:Key="s.ContinuePrint">Continue</sys:String>
+    <sys:String x:Key="s.StatusPaused">Paused: {0} file(s) remaining</sys:String>
+    <sys:String x:Key="s.LogPaused">Stopped, {0} file(s) remaining (click "Continue" to resume)</sys:String>
+    <sys:String x:Key="s.LogQueueCancelled">Cancelled {0} job(s) in the printer queue</sys:String>
+    <sys:String x:Key="s.LogReportSaved">Report saved: </sys:String>
+    <sys:String x:Key="s.LogReportFailed">Failed to generate report: </sys:String>
+    <sys:String x:Key="s.ToastReportSaved">Report saved: </sys:String>
+
+    <sys:String x:Key="s.SettingsReport">Print Report</sys:String>
+    <sys:String x:Key="s.SettingsReportDesc">After printing, save a CSV report (file name / extension / copies / pages / status / time / printer).</sys:String>
+    <sys:String x:Key="s.SettingsReportEnable">Save a CSV report after printing (off by default)</sys:String>
+
+    <sys:String x:Key="s.FolderSelectTitle">Select files in folder</sys:String>
+    <sys:String x:Key="s.FolderSelectHint">Only printable files are shown. Hold Ctrl to multi-select, Shift to range-select.</sys:String>
+    <sys:String x:Key="s.FolderSelectConfirm">Add Selected</sys:String>
+    <sys:String x:Key="s.FolderSelectAll">Select All</sys:String>
+    <sys:String x:Key="s.FolderSelectNone">Select None</sys:String>
+    <!-- U2-3: ToggleSwitch state text -->
+    <sys:String x:Key="s.ToggleOn">On</sys:String>
+    <sys:String x:Key="s.ToggleOff">Off</sys:String>
+    <!-- U2-4: footer "currently in effect" line of the print settings dialog -->
+    <sys:String x:Key="s.PsEffective">In effect: </sys:String>
+    <!-- V4.3 F6: full print parameters -->
+    <sys:String x:Key="s.PsParity">Odd/Even pages</sys:String>
+    <sys:String x:Key="s.PsParityAll">All</sys:String>
+    <sys:String x:Key="s.PsParityOdd">Odd pages only</sys:String>
+    <sys:String x:Key="s.PsParityEven">Even pages only</sys:String>
+    <sys:String x:Key="s.PsPaperSource">Paper tray</sys:String>
+    <sys:String x:Key="s.PsPaperSourceAuto">Auto (printer default tray)</sys:String>
+    <sys:String x:Key="s.PsScaleMode">Scale mode</sys:String>
+    <sys:String x:Key="s.PsScaleFit">Fit to page</sys:String>
+    <sys:String x:Key="s.PsScaleNone">No scaling</sys:String>
+    <sys:String x:Key="s.PsScaleShrink">Shrink to fit (never enlarge)</sys:String>
+    <sys:String x:Key="s.PsScaleStretch">Stretch to fill printable area</sys:String>
+    <sys:String x:Key="s.PsScaleCustom">Custom percent</sys:String>
+    <sys:String x:Key="s.PsBooklet">Booklet printing</sys:String>
+    <sys:String x:Key="s.PsBookletHint">Saddle-stitch page order (forces 2-up landscape, blanks added to a multiple of 4); pair with two-sided long-edge</sys:String>
+    <sys:String x:Key="s.PsPriorityNote">These settings override printer defaults (app print settings &gt; printer defaults &gt; driver factory values)</sys:String>
+    <!-- V4.3 F15: printer settings moved to Settings page -->
+    <sys:String x:Key="s.SettingsPrinterTitle">Printer</sys:String>
+    <sys:String x:Key="s.SettingsPrinterDesc">Choose a printer (synced with main page)</sys:String>
+    <sys:String x:Key="s.SettingsPrinterProps">Open printer properties…</sys:String>
+    <sys:String x:Key="s.SettingsPrinterNote">This changes Windows printer defaults; for per-job duplex/paper use "Print Setup" on the main page</sys:String>
+    <!-- V4.3 F16: history grid rework -->
+    <sys:String x:Key="s.HistorySortHint">Click to sort by this column</sys:String>
+    <sys:String x:Key="s.HistoryFilterByPrinter">Filter by printer</sys:String>
+    <!-- V4.4 F5: per-file parameter card -->
+    <sys:String x:Key="s.ColParams">Params</sys:String>
+    <sys:String x:Key="s.FollowGlobal">Follow global</sys:String>
+    <sys:String x:Key="s.Custom">Custom</sys:String>
+    <sys:String x:Key="s.ListSep">, </sys:String>
+    <sys:String x:Key="s.RowParamsTitle">This file's print settings</sys:String>
+    <sys:String x:Key="s.RowParamsReset">Reset to global</sys:String>
+    <sys:String x:Key="s.RowParamsNote">Unchanged items follow the global "Print Setup"; type copies and page range in the list columns</sys:String>
+    <sys:String x:Key="s.RowParamsToggleTip">Edit this file's print settings</sys:String>
+    <sys:String x:Key="s.EditParams">Edit</sys:String>
+    <sys:String x:Key="s.RowParamsSave">Save</sys:String>
+    <sys:String x:Key="s.LogCustom">{0} file(s) use their own settings (per-file card)</sys:String>
+    <sys:String x:Key="s.PlanCustomFields">Custom: {0}</sys:String>
+    <!-- ===== V4.5-2: history status column text from resource keys ===== -->
+    <sys:String x:Key="s.HistStatusOk">Success</sys:String>
+    <sys:String x:Key="s.HistStatusFail">Failed</sys:String>
+
+    <!-- ===== V4.7 split: feature limit notice ===== -->
+
+    <!-- ===== V4.7 修整2：About page "Check for updates"（manifest contract＝work\docs\客户端契约-20260926.md §2.5） ===== -->
+    <sys:String x:Key="s.AboutUpdateTitle">Check for updates</sys:String>
+    <sys:String x:Key="s.AboutUpdateDesc">Manually checks the official update manifest; it only reads the manifest and uploads nothing about this device</sys:String>
+    <sys:String x:Key="s.AboutUpdateBtn">Check now</sys:String>
+    <sys:String x:Key="s.UpdateLatestFmt">You are on the latest version ({0}).</sys:String>
+    <sys:String x:Key="s.UpdateFoundFmt">New version {0} ({1})</sys:String>
+    <sys:String x:Key="s.UpdateNotesFmt">Release notes: {0}</sys:String>
+    <sys:String x:Key="s.UpdateAskDownload">Open the download page?</sys:String>
+    <sys:String x:Key="s.UpdateFailedFmt">Cannot reach the update server. Printing is unaffected; check your network and try again, or get the latest version from the official download page.</sys:String>
+    <sys:String x:Key="s.UpdateFailTimeout">Cannot reach the update server (no response within 10 seconds; the backup domain was tried automatically). Printing is unaffected; check your network and try again, or get the latest version from the official download page.</sys:String>
+    <sys:String x:Key="s.UpdateFailNetwork">Cannot reach the update server (network error). Printing is unaffected; please try again later.</sys:String>
+    <sys:String x:Key="s.UpdateUnrecognized">The update server returned data that could not be read. Treated as “up to date”.</sys:String>
+    <sys:String x:Key="s.UpdateOpenFailed">Could not open the download page (no default browser, or the address is invalid).</sys:String>
+
+    <!-- ===== V4.9-1：关闭按钮行为三选（39 号开工令；41 号·修A 起"最小化"＝最小化到系统托盘） ===== -->
+    <sys:String x:Key="s.ClosePromptTitle">Close the window</sys:String>
+    <sys:String x:Key="s.ClosePromptBody">After closing this window, minimize the program to the system tray and keep it running, or quit completely?</sys:String>
+    <sys:String x:Key="s.ClosePromptBusy">Running jobs will be interrupted.</sys:String>
+    <sys:String x:Key="s.CloseExitApp">Quit program</sys:String>
+    <sys:String x:Key="s.CloseRemember">Don't ask again, remember my choice</sys:String>
+    <sys:String x:Key="s.SettingsCloseTitle">Close button behaviour</sys:String>
+    <sys:String x:Key="s.SettingsCloseDesc">What happens when you click the ✕ in the title bar</sys:String>
+    <sys:String x:Key="s.CloseAsk">Ask every time</sys:String>
+    <sys:String x:Key="s.CloseMinimize">Minimize to tray</sys:String>
+    <sys:String x:Key="s.CloseExit">Quit directly</sys:String>
+
+    <!-- ===== V4.9-2：问题反馈（字段与限频＝客户端契约 §2.8；文档内容永不上传） ===== -->
+    <sys:String x:Key="s.FbEntryTitle">Send feedback</sys:String>
+    <sys:String x:Key="s.FbEntryDesc">Tell us on the website feedback page; this button also copies the log folder path to your clipboard so you can attach a log. Printed document content is never uploaded</sys:String>
+    <sys:String x:Key="s.FbEntryBtn">Open website</sys:String>
+
+    <!-- ===== V4.9 in-version polish (page-range feedback, fixed row height): pages column / focus bubble / hover tip / status warning =====
+         The Pages column is only 60 DIP wide, so the cell keeps a short form ("8/12") and the full verdict goes to the two
+         floating layers (bubble + tooltip). Row height stays locked. -->
+    <sys:String x:Key="s.RangeCountFmt">{0}/{1}</sys:String>
+    <sys:String x:Key="s.RangeCountShortFmt">{0}/{1}</sys:String>
+    <sys:String x:Key="s.RangeBadShort">invalid</sys:String>
+    <sys:String x:Key="s.RangeTipOkFmt">✓ Prints pages {0} - {1} of {2} pages</sys:String>
+    <sys:String x:Key="s.RangeTipPartialFmt">⚠ {0} pages print (pages {1}); {2} page numbers are out of range and were ignored</sys:String>
+    <sys:String x:Key="s.RangeTipBadFmt">✗ No valid page number - all {0} pages will print</sys:String>
+    <sys:String x:Key="s.RangeTipUnknownOkFmt">✓ Format is fine (pages {0}); the page total is only known after the conversion at print time</sys:String>
+    <sys:String x:Key="s.RangeTipUnknownBad">✗ No valid page number - all pages will print</sys:String>
+    <sys:String x:Key="s.RangeTipEmptyFmt">No page range - all {0} pages print</sys:String>
+    <sys:String x:Key="s.RangeTipEmptyUnknown">No page range - all pages print (the total is known after conversion)</sys:String>
+    <sys:String x:Key="s.RangeTipFullWidth">Full-width digits were accepted automatically</sys:String>
+    <sys:String x:Key="s.StatusRangeInvalidFmt">⚠ Range ignored - printed all {0} pages</sys:String>
+    <sys:String x:Key="s.LogRangeIgnored">Ignored {0} out-of-range page number(s)</sys:String>
+
+    <!-- ===== V4.9 版本内修整第二批（41 号：托盘 + 单实例 + 反馈跳官网 + 设置页/关于页精简）=====
+         退役：设置页四块（转换引擎 / 验证落盘 / 输出位置 / 其他）、关于页顶部标题卡、
+         V4.9-2 客户端直发反馈窗口与客户端（22 枚 s.Fb* 窗口键）；新增：托盘三项、提示窗「最小化」按钮、
+         关于页版本行与独立性卡标题、反馈跳转的三种状态文字。 ===== -->
+    <sys:String x:Key="s.CloseMinimizeBtn">Minimize</sys:String>
+    <sys:String x:Key="s.TrayTip">PrintPile · Batch Print (minimized to tray)</sys:String>
+    <sys:String x:Key="s.TrayOpen">Open main window</sys:String>
+    <sys:String x:Key="s.TrayExit">Exit</sys:String>
+    <sys:String x:Key="s.AboutVersionNow">current version</sys:String>
+    <sys:String x:Key="s.AboutIndependenceTitle">Independence &amp; privacy</sys:String>
+    <sys:String x:Key="s.FbCopied">The log folder path is on your clipboard - attach it on the website feedback page</sys:String>
+    <sys:String x:Key="s.FbCopyFailed">Could not copy the log path (clipboard busy) - copy it manually: {0}</sys:String>
+    <sys:String x:Key="s.FbOpenFailed">Could not open the feedback page in your default browser - visit it manually: {0}</sys:String>
+
+    <!-- ===== V4.9.2（45 号：转换超界检测 + 日志增强 + 打印预览）===== 与 zh-CN 同一份键名单，逐枚成对 ===== -->
+    <sys:String x:Key="s.StatusOverflowFmt">⚠ Page {0} runs past the page edge - it will be cropped</sys:String>
+    <sys:String x:Key="s.StatusOverflowManyFmt">⚠ {0} pages run past the page edge - see the log</sys:String>
+    <sys:String x:Key="s.StatusNearEdgeFmt">⚠ Page {0} content sits at the page edge - it may be cropped</sys:String>
+    <sys:String x:Key="s.StatusSourceWideFmt">⚠ Source table is {0} mm wider than the text area - it will be cropped</sys:String>
+    <sys:String x:Key="s.PvNearEdgeOneFmt">⚠ Page {0} content sits against the {1} (about {2} mm from the page edge, well inside the ~{3} mm unprintable band) - most printers cannot print that band. Fix: move the content into the text area, or choose "fit to page" and print again.</sys:String>
+    <sys:String x:Key="s.PvSourceWideFmt">⚠ Source layout check: table {0} is {1} mm wide, about {4} mm wider than the {2} text area ({3} mm) - the right side will be cropped. Fix: in Word select the table and use "Adjust to window", or shrink the column widths into the text area.</sys:String>
+    <sys:String x:Key="s.PvTitleFmt">Print preview · {0}</sys:String>
+    <sys:String x:Key="s.PvClose">Close</sys:String>
+    <sys:String x:Key="s.PvViewZoomFmt">Zoom {0}%</sys:String>
+    <sys:String x:Key="s.PvFitBtn">Fit page</sys:String>
+    <sys:String x:Key="s.PvActualBtn">Actual size</sys:String>
+    <sys:String x:Key="s.PvZoomInTip">Zoom in one step (or scroll up with Ctrl held)</sys:String>
+    <sys:String x:Key="s.PvZoomOutTip">Zoom out one step (or scroll down with Ctrl held)</sys:String>
+    <sys:String x:Key="s.PvPrevBtn">Previous</sys:String>
+    <sys:String x:Key="s.PvNextBtn">Next</sys:String>
+    <sys:String x:Key="s.PvPageOfFmt">Page {0} of {1}</sys:String>
+    <sys:String x:Key="s.PvQueue">Add to print queue</sys:String>
+    <sys:String x:Key="s.PvLabelType">Type</sys:String>
+    <sys:String x:Key="s.PvLabelPaper">Paper</sys:String>
+    <sys:String x:Key="s.PvLabelScale">Scaling</sys:String>
+    <sys:String x:Key="s.PvLabelRange">Pages</sys:String>
+    <sys:String x:Key="s.PvLabelOutput">Output</sys:String>
+    <sys:String x:Key="s.PvKindPdfFmt">{0} (printed directly)</sys:String>
+    <sys:String x:Key="s.PvKindOfficeFmt">{0} → PDF ({1})</sys:String>
+    <sys:String x:Key="s.PvStateNone">not converted</sys:String>
+    <sys:String x:Key="s.PvStateConverting">converting…</sys:String>
+    <sys:String x:Key="s.PvStateCached">converted, cached</sys:String>
+    <sys:String x:Key="s.PvStateFailedFmt">conversion failed: {0}</sys:String>
+    <sys:String x:Key="s.PvPortrait">portrait</sys:String>
+    <sys:String x:Key="s.PvLandscape">landscape</sys:String>
+    <sys:String x:Key="s.PvOrientAuto">orientation auto</sys:String>
+    <sys:String x:Key="s.PvScaleFit">fit to page</sys:String>
+    <sys:String x:Key="s.PvScaleNone">no scaling</sys:String>
+    <sys:String x:Key="s.PvScaleShrink">shrink to fit</sys:String>
+    <sys:String x:Key="s.PvScaleStretch">stretch to fill</sys:String>
+    <sys:String x:Key="s.PvScalePercentFmt">{0}%</sys:String>
+    <sys:String x:Key="s.PvColorBw">black &amp; white</sys:String>
+    <sys:String x:Key="s.PvColorColor">colour</sys:String>
+    <sys:String x:Key="s.PvDuplexSimplex">simplex</sys:String>
+    <sys:String x:Key="s.PvDuplexLong">duplex long edge</sys:String>
+    <sys:String x:Key="s.PvDuplexShort">duplex short edge</sys:String>
+    <sys:String x:Key="s.PvCopiesFmt">{0} copy(s)</sys:String>
+    <sys:String x:Key="s.PvRangeAllFmt">all ({0} pages)</sys:String>
+    <sys:String x:Key="s.PvRangePickedFmt">{0} page(s) by range/parity</sys:String>
+    <sys:String x:Key="s.PvPageFmt">Page {0}</sys:String>
+    <sys:String x:Key="s.PvSafeAreaFmt">{0} printable area</sys:String>
+    <sys:String x:Key="s.PvOverflowOneFmt">⚠ Page {0} content passes the {1} by about {2} mm (the source is wider than the page) - printing it as is will crop that part. Fix: pull the content inside the printable area in the source document (in Word: "Adjust to window" for tables), or choose "fit to page" and print again.</sys:String>
+    <sys:String x:Key="s.PvOverflowManyFmt">⚠ {0} pages pass the page edge - see the log for each page. Printing as is will crop them. Fix: pull the content inside the printable area in the source document, or choose "fit to page" and print again.</sys:String>
+    <sys:String x:Key="s.PvEdgeRight">right edge</sys:String>
+    <sys:String x:Key="s.PvEdgeLeft">left edge</sys:String>
+    <sys:String x:Key="s.PvEdgeTop">top edge</sys:String>
+    <sys:String x:Key="s.PvEdgeBottom">bottom edge</sys:String>
+    <sys:String x:Key="s.PvOverflowLegend">Red hatching = outside the printable area; this part is cropped when printed as is</sys:String>
+    <sys:String x:Key="s.PvRenderFailed">This page could not be rendered</sys:String>
+    <sys:String x:Key="s.PvNoPages">Nothing to preview (the page range has no valid page number)</sys:String>
+    <sys:String x:Key="s.PvConvertingHint">Building the PDF with the same converter the print job uses (first preview takes a moment)…</sys:String>
+    <sys:String x:Key="s.PvQueuedFmt">Added to the print queue after preview: {0}</sys:String>
+    <sys:String x:Key="s.PvScanFailedFmt">Layout check did not run: {0} - that does not mean nothing overflows</sys:String>
+    <sys:String x:Key="s.PvScanTruncatedFmt">⚠ Only the first {0} pages were checked ({1} in total); the rest were not</sys:String>
+
+    <!-- ===== V4.9.3（49 号：关于页改版 + 自动检查更新 + 更新渠道 + 立即检查内联）——与中文同一批 20 枚，逐枚成对 =====
+         中文侧改口两枚既有键（s.AboutUpdateBtn→「立即检查」、s.AboutOpenLog→「打开日志」）；英文侧 s.AboutUpdateBtn 原本就是 "Check now"，未动。 -->
+    <sys:String x:Key="s.AboutBuildFmt">Build {0}</sys:String>
+    <sys:String x:Key="s.AboutBtnSite">Website</sys:String>
+    <!-- 59 号令：s.AboutBtnGitHub 与 s.AboutOpenedGitHub 随「GitHub」按钮成对删除（闭源口径，中英同步） -->
+    <sys:String x:Key="s.AboutBtnData">Open data folder</sys:String>
+    <sys:String x:Key="s.AboutOpenedSite">Opened the website in your browser: {0}</sys:String>
+    <sys:String x:Key="s.AboutOpenedData">Opened the data folder: {0}</sys:String>
+    <sys:String x:Key="s.AboutOpenedLog">Opened the log folder: {0}</sys:String>
+    <sys:String x:Key="s.AboutOpenFailedFmt">Could not open "{0}" - printing and your existing files are unaffected. Try again later, or browse there yourself.</sys:String>
+    <sys:String x:Key="s.AboutCreatedFmt">(it did not exist, so it was created)</sys:String>
+    <sys:String x:Key="s.AboutAutoTitle">Automatic update check</sys:String>
+    <sys:String x:Key="s.AboutAutoDesc">Reads the release list from the website once a day and only mentions a new version here - nothing is downloaded or installed automatically.</sys:String>
+    <sys:String x:Key="s.UpdateChecking">Checking...</sys:String>
+    <sys:String x:Key="s.UpdateOpenDownloadBtn">Open download page</sys:String>
+    <sys:String x:Key="s.UpdateAutoPrefix">Automatic check: </sys:String>
+    <sys:String x:Key="s.TrayNewVersionFmt">New version {0} available - see the About page</sys:String>
+    <!-- 66 号令：左下角橙色更新按钮＋更新对话框（与 zh 成对；「取消」「重试」「关闭」复用既有键） -->
+    <sys:String x:Key="s.UpBtn">Update</sys:String>
+    <sys:String x:Key="s.UpTitle">New version available</sys:String>
+    <sys:String x:Key="s.UpFoundFmt">Version {0} is ready to install</sys:String>
+    <sys:String x:Key="s.UpCurrentFmt">You are on {0}</sys:String>
+    <sys:String x:Key="s.UpSizeFmt">About {0}, downloaded to your temp folder</sys:String>
+    <sys:String x:Key="s.UpBtnDownload">Download update</sys:String>
+    <sys:String x:Key="s.UpDownloading">Downloading update…</sys:String>
+    <sys:String x:Key="s.UpFailed">That step did not finish. Retry or do it later.</sys:String>
+    <sys:String x:Key="s.UpBtnInstall">Install now</sys:String>
+    <sys:String x:Key="s.UpBtnLater">Later</sys:String>
+    <sys:String x:Key="s.UpExitConfirm">PrintPile will close and open the installer.</sys:String>
+    <sys:String x:Key="s.UpPortableHint">Unzip over this folder to finish the update - settings and data are kept.</sys:String>
+    <sys:String x:Key="s.UpBtnFolder">Open folder</sys:String>
+    <sys:String x:Key="s.UpOpening">Opening installer…</sys:String>
+    <!-- ===== 52 号令·返修③（2026-10-06）：反馈自动打包日志（中英逐枚成对） ===== -->
+    <sys:String x:Key="s.FbAutoLogsTitle">Automatically attach logs with feedback</sys:String>
+    <sys:String x:Key="s.FbAutoLogsDesc">Logs may include printed file names and other local info, for troubleshooting only. Uncheck to skip the auto upload.</sys:String>
+    <sys:String x:Key="s.FbLogPackSent">A log package was attached automatically (it will be linked to your feedback once submitted).</sys:String>
+    <sys:String x:Key="s.FbLogPackFailedFmt">The log package could not be uploaded ({0}); you can still attach log files manually on the feedback page.</sys:String>
+    <sys:String x:Key="s.HistoryLimitUnlimited">All</sys:String>
+    <sys:String x:Key="s.HistoryCapHint">(showing the latest 200 rows; older records are kept - switch the tier to "No limit" to see all)</sys:String>
+    <!-- ===== 52 号令·步骤 4（2026-10-06）：主题引擎（中英逐枚成对） ===== -->
+    <sys:String x:Key="s.ThemeMoreBtn">Get more themes (website)</sys:String>
+    <sys:String x:Key="s.ThemeStoreComing">The online theme gallery is coming soon.</sys:String>
+    <sys:String x:Key="s.ThemeApplyFailed">Failed to apply the theme: it may be corrupted or removed.</sys:String>
+    <!-- ===== 68 号令 T1（需求八）：四个内置默认模板＋恢复入口（与中文逐枚成对，各 7 枚） ===== -->
+    <sys:String x:Key="s.TplBuiltinA4MonoSimplex">A4 B/W Simplex</sys:String>
+    <sys:String x:Key="s.TplBuiltinA4MonoDuplex">A4 B/W Duplex</sys:String>
+    <sys:String x:Key="s.TplBuiltinA4ColorSimplex">A4 Color Simplex</sys:String>
+    <sys:String x:Key="s.TplBuiltinA4ColorDuplex">A4 Color Duplex</sys:String>
+    <sys:String x:Key="s.TplRestoreBuiltin">Restore defaults</sys:String>
+    <sys:String x:Key="s.TplRestoredFmt">Default templates: {0} added back (your own templates were left untouched)</sys:String>
+    <sys:String x:Key="s.TplBuiltinHint">The four default templates are always there in the print settings; delete them and get them back with "Restore defaults"</sys:String>
+    <!-- ===== Order 72 (V1.1.0 · F7 watched folders, 2026-10-13): page skeleton + rule list columns (24 keys, paired with zh).
+         Rules live in data\watch-rules.json - settings.json gains no key in this order. ===== -->
+    <sys:String x:Key="s.NavWatch">Watch Folders</sys:String>
+    <sys:String x:Key="s.WatchTitle">Watched folders</sys:String>
+    <sys:String x:Key="s.WatchDesc">When a file lands in a watched folder it is queued and printed with that rule's settings. Watching runs while the app is open (minimizing to the tray keeps it running).</sys:String>
+    <sys:String x:Key="s.WatchCount">{0} rule(s) - {1} on</sys:String>
+    <sys:String x:Key="s.WatchEmpty">No rules yet. Click "New rule" to add the first one.</sys:String>
+    <sys:String x:Key="s.WatchAdd">New rule</sys:String>
+    <sys:String x:Key="s.WatchEdit">Edit</sys:String>
+    <sys:String x:Key="s.WatchDelete">Delete</sys:String>
+    <sys:String x:Key="s.WatchColEnabled">On</sys:String>
+    <sys:String x:Key="s.WatchColName">Rule</sys:String>
+    <sys:String x:Key="s.WatchColFolder">Folder</sys:String>
+    <sys:String x:Key="s.WatchColParams">Settings</sys:String>
+    <sys:String x:Key="s.WatchColState">Status</sys:String>
+    <sys:String x:Key="s.WatchAllTypes">All supported</sys:String>
+    <sys:String x:Key="s.WatchAllDay">All day</sys:String>
+    <sys:String x:Key="s.WatchSub">incl. subfolders</sys:String>
+    <sys:String x:Key="s.WatchPrinterFollow">Current</sys:String>
+    <sys:String x:Key="s.WatchTplNone">No template</sys:String>
+    <sys:String x:Key="s.WatchKeep">Keep in place</sys:String>
+    <sys:String x:Key="s.WatchMove">Move to "Done"</sys:String>
+    <sys:String x:Key="s.WatchNever">Nothing yet</sys:String>
+    <sys:String x:Key="s.WatchOffState">Paused</sys:String>
+    <sys:String x:Key="s.WatchFiredFmt">Triggered {0} time(s) - last {1}</sys:String>
+    <sys:String x:Key="s.WatchStarted">Watching started: {0} rule(s) waiting for files</sys:String>
+    <!-- Order 72: delete needs a second confirmation (only the rule goes away, never a user file) -->
+    <sys:String x:Key="s.WatchDeleteQ">Delete rule "{0}"? This only removes the rule - no file is moved or deleted.</sys:String>
+    <sys:String x:Key="s.WatchDeleted">Watch rule deleted: {0}</sys:String>
+    <!-- Order 72: rule editor dialog (18 keys, paired; OK/Cancel reuse the existing keys) -->
+    <sys:String x:Key="s.WatchDlgNew">New watch rule</sys:String>
+    <sys:String x:Key="s.WatchDlgEdit">Edit watch rule</sys:String>
+    <sys:String x:Key="s.WatchDlgName">Rule name (blank shows the folder name)</sys:String>
+    <sys:String x:Key="s.WatchDlgFolder">Folder to watch</sys:String>
+    <sys:String x:Key="s.WatchDlgBrowse">Choose folder...</sys:String>
+    <sys:String x:Key="s.WatchDlgTypes">File types</sys:String>
+    <sys:String x:Key="s.WatchDlgTypesHint">e.g. *.pdf;*.docx;*.xlsx - blank = every print format this app supports</sys:String>
+    <sys:String x:Key="s.WatchDlgWindow">Active hours</sys:String>
+    <sys:String x:Key="s.WatchDlgAllDay">Print all day</sys:String>
+    <sys:String x:Key="s.WatchDlgFrom">From</sys:String>
+    <sys:String x:Key="s.WatchDlgTo">To</sys:String>
+    <sys:String x:Key="s.WatchDlgTimeHint">24-hour HH:mm; "To" earlier than "From" means overnight (e.g. 22:00-06:00)</sys:String>
+    <sys:String x:Key="s.WatchDlgBadTime">Write the hours as 24-hour HH:mm (for example 09:00 and 18:00), or tick "Print all day".</sys:String>
+    <sys:String x:Key="s.WatchDlgPrinter">Target printer</sys:String>
+    <sys:String x:Key="s.WatchDlgTemplate">Print template</sys:String>
+    <sys:String x:Key="s.WatchDlgAction">After printing</sys:String>
+    <sys:String x:Key="s.WatchDlgMoveLabel">Move into a "Done" subfolder</sys:String>
+    <sys:String x:Key="s.WatchDlgActionHint">This feature never deletes a file; if the move fails the file stays where it is and a note is logged.</sys:String>
+    <!-- Order 72: folder protection and runtime notes (never print a half-written file, never delete; 10 keys paired) -->
+    <sys:String x:Key="s.WatchErrEmpty">Choose the folder to watch first.</sys:String>
+    <sys:String x:Key="s.WatchErrMissing">That folder cannot be opened or no longer exists - please choose again.</sys:String>
+    <sys:String x:Key="s.WatchErrSelfDir">The app's own folder cannot be watched (including data, config and logs).</sys:String>
+    <sys:String x:Key="s.WatchErrNested">This rule would nest with another one (the same file would print twice). Please pick separate folders.</sys:String>
+    <sys:String x:Key="s.WatchErrTooLong">That folder path is too long - please choose a shorter one.</sys:String>
+    <sys:String x:Key="s.WatchUnnamed">Unnamed</sys:String>
+    <sys:String x:Key="s.WatchNoPrinter">No printer available, this file was not printed</sys:String>
+    <sys:String x:Key="s.WatchFollowGlobal">current settings</sys:String>
+    <sys:String x:Key="s.WatchLogFired">Watched folder ({1}): {0} -> printed to {3} ({2})</sys:String>
+    <sys:String x:Key="s.WatchFireFailed">Watch rule could not queue the file: </sys:String>
+    <!-- ===== Order 73 (V1.2.0, D-36 supersedes D-24): fully free & open under GNU GPLv3 - the code/signing,
+         time-limited evaluation and feature caps are removed; 41 paired zh/en keys retired. The 6 keys below are new. ===== -->
+    <sys:String x:Key="s.AboutLicenseLine">This software is open source under GNU GPLv3 and every feature is free; the full licence text ships in licenses\LICENSE.</sys:String>
+</ResourceDictionary>

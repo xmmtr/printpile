@@ -1,0 +1,55 @@
+<!--
+This file is part of PrintPile (https://printpile.cn).
+
+Copyright (C) 2026 the PrintPile developers
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- V4.9 版本内修整第二批·修A：托盘图标用 WinForms 的 NotifyIcon（.NET 自带，零第三方依赖）。
+         体积代价＝零：System.Windows.Forms*.dll 早就随 System.Drawing.Common 进了发布目录
+         （M2/M6 注释自陈"实测不省体积"），本轮启用前后文件清单与字节完全一致，
+         故 M6 那条守护断言由"无 WinForms 编译期引用"改判为"不新增 WinForms 程序集"（数字见自检报告）。
+         托盘菜单不用 WinForms 的 ContextMenuStrip（固定灰底），用 WPF ContextMenu 跟随浅/深主题。 -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>PrintPile</AssemblyName>
+    <RootNamespace>BatchPrintCN</RootNamespace>
+    <Description>Windows 批量打印工具——支持 PDF/Word/Excel/PPT/图片/文本批量打印；仅本机打印，不上传任何文档内容。</Description>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
+  <!-- M1：引擎层改 ProjectReference（原 6 条 Compile Include Link 已废除）；
+       pdfium.dll 随 Core 的 Content 传递到本工程输出目录。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\BatchPrintCN.Core\BatchPrintCN.Core.csproj" />
+  </ItemGroup>
+  <!-- V4.2.3 M3：合规文本随工程走（原来每次发布都要手抄进发布目录，容易漏改）；
+       版本行仍手工维护，由 selftest 的「版本一致」断言核对。
+       73 号令（V1.2.0，D-36）：许可证换成仓库根的 LICENSE（GNU GPLv3 全文），随包一份；
+       此前的 PolyForm Noncommercial 文本不再随包（那是"非商用"许可，与全面 free & open 的定位相反）。 -->
+  <ItemGroup>
+    <Content Include="NOTICE" CopyToOutputDirectory="PreserveNewest" />
+    <!-- V4.9 修整第二批·修A：托盘图标复用同一枚 app.ico（ApplicationIcon 只把它烧进 exe、不复制到输出目录，
+         NotifyIcon 要的是文件句柄，故随包一份；取不到文件时代码会退回 ExtractAssociatedIcon，同一枚图） -->
+    <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+  </ItemGroup>
+</Project>

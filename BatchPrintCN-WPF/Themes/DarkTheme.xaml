@@ -1,0 +1,116 @@
+<!--
+This file is part of PrintPile (https://printpile.cn).
+
+Copyright (C) 2026 the PrintPile developers
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- U1 换皮（V4.2.4）：Fluent 2 深色色板（07 §三）。键名沿用旧主题，页面 XAML 零改动。 -->
+    <!-- 修整3（V4.4）：表格内/外边框线色——深色主题纯黑不可见，用近黑深灰 #333（需求方 2026-09-20 拍板） -->
+    <SolidColorBrush x:Key="GridLineBrush" Color="#FF333333"/>
+    <SolidColorBrush x:Key="WindowBgBrush" Color="#202020"/>
+    <SolidColorBrush x:Key="SidebarBgBrush" Color="#191919"/>
+    <SolidColorBrush x:Key="CardBgBrush" Color="#272727"/>
+    <SolidColorBrush x:Key="CardAltBgBrush" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="InputBgBrush" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="InputBgHoverBrush" Color="#323232"/>
+    <SolidColorBrush x:Key="LogBgBrush" Color="#272727"/>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CFCFCF"/>
+    <SolidColorBrush x:Key="TextFaintBrush" Color="#8A8A8A"/>
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="#08202E"/>
+
+    <SolidColorBrush x:Key="AccentBrush" Color="#4CC2FF"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#6BD0FF"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#3AAFE8"/>
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#22323D"/>
+
+    <SolidColorBrush x:Key="ActionGradientBrush" Color="#4CC2FF"/>
+    <SolidColorBrush x:Key="ActionGradientHoverBrush" Color="#6BD0FF"/>
+
+    <SolidColorBrush x:Key="BorderBrush" Color="#323232"/>
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="#3D3D3D"/>
+
+    <SolidColorBrush x:Key="DangerBrush" Color="#FF8A8A"/>
+    <SolidColorBrush x:Key="DangerBorderBrush" Color="#B13A34"/>
+    <SolidColorBrush x:Key="DangerSoftBrush" Color="#3A2725"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#6CCF6C"/>
+    <SolidColorBrush x:Key="SuccessSoftBrush" Color="#233223"/>
+
+    <SolidColorBrush x:Key="GridHeaderBgBrush" Color="#2D2D2D"/>
+    <!-- V4.4 三批·修复A（验收缺陷A）：WPF-UI 隐式 DataGridRow 把行底写死成不透明白，深色主题字典切了它仍是白底
+         → 深色下"白底＋白字"三段割裂。这里给主题键一份深色行底：卡片同色 #272727（开工令 修复A a 许可口径）。 -->
+    <SolidColorBrush x:Key="GridRowBgBrush" Color="#272727"/>
+    <SolidColorBrush x:Key="GridRowHoverBrush" Color="#2C2C2C"/>
+    <SolidColorBrush x:Key="GridRowSelectedBrush" Color="#2B3A46"/>
+
+    <!-- 修整16（V4.4 四批）：状态列上色，键名与浅色字典一一对应（色值定案见 LightTheme.xaml 的注释）。
+         深色行底 #272727：拍板原值绿 #67C23A 6.65 够用，但选中底 #2B3A46 上红 #F56C6C 只剩 4.03 不过线，
+         故两色统一用拍板色板的提亮档（开工令点名的 hover 族）——绿 #95D475（8.50/7.95/6.65）、
+         红 #F89898（7.07/6.61/5.53），三档底色（行底/悬停/选中）最差值都 ≥5.5。 -->
+    <SolidColorBrush x:Key="StatusOkTextBrush" Color="#95D475"/>
+    <SolidColorBrush x:Key="StatusFailTextBrush" Color="#F89898"/>
+
+    <!-- V4.9 版本内修整（打印范围反馈）·修2/修6：状态黄，键名与浅色字典一一对应。
+         深色行底 #272727 上拍板原值 #E6A23C 就有 6.83、选中底 #2B3A46 上 5.09，三档底色最差 ≥5.0，
+         故这里直接用原值（与绿/红"深色用提亮档"相反——黄本来就更亮，压暗反而掉对比）。 -->
+    <SolidColorBrush x:Key="StatusWarnTextBrush" Color="#E6A23C"/>
+
+    <!-- V4.5-1：深色主题三枚键与三批修复B 的验收值逐字节相同（浅底 #606266 压白底 5.90、实底白字、悬停蓝字）
+         → 需求方拍板"深色保持可读"＝深色观感零回退；色值改由主题键供给（浅色字典同键给旧观感深字）。 -->
+    <SolidColorBrush x:Key="BtnLightAreaTextBrush" Color="#606266"/>
+    <SolidColorBrush x:Key="BtnSolidTextBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BtnAccentTextBrush" Color="#409EFF"/>
+
+    <SolidColorBrush x:Key="TipBgBrush" Color="#22323D"/>
+    <SolidColorBrush x:Key="TipBorderBrush" Color="#2F4B63"/>
+    <SolidColorBrush x:Key="TipTextBrush" Color="#9FD3F5"/>
+
+    <SolidColorBrush x:Key="ScrollerThumbBrush" Color="#5A5A5A"/>
+    <SolidColorBrush x:Key="FocusRingBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="PreviewAreaBrush" Color="#2B2B2B"/>
+
+    <!-- V4.2.5 修整（需求方反馈）：同浅色——悬停灰渐变、按下更灰一档；主按钮浅蓝（深色版）。 -->
+    <LinearGradientBrush x:Key="ButtonBackgroundPointerOver" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FF3D3D3D" Offset="0"/>
+        <GradientStop Color="#FF2F2F2F" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF4B4B4B"/>
+
+    <!-- 52 号令·步骤 4（D-15）：Element Plus 按钮色板（原 Styles.xaml 固定值，随主题令牌变）。
+         浅/深两份同键同时存在；ThemeService.ApplyTokens 按 accent/status.* 派生覆盖。 -->
+    <SolidColorBrush x:Key="ElPrimaryBrush" Color="#409EFF"/>
+    <SolidColorBrush x:Key="ElPrimaryHoverBrush" Color="#79BBFF"/>
+    <SolidColorBrush x:Key="ElPrimaryActiveBrush" Color="#3A8EE6"/>
+    <SolidColorBrush x:Key="ElSuccessBrush" Color="#67C23A"/>
+    <SolidColorBrush x:Key="ElSuccessHoverBrush" Color="#95D475"/>
+    <SolidColorBrush x:Key="ElSuccessActiveBrush" Color="#529B2E"/>
+    <SolidColorBrush x:Key="ElWarningBrush" Color="#E6A23C"/>
+    <SolidColorBrush x:Key="ElWarningHoverBrush" Color="#EEBE77"/>
+    <SolidColorBrush x:Key="ElWarningActiveBrush" Color="#B88230"/>
+    <SolidColorBrush x:Key="ElDangerBrush" Color="#F56C6C"/>
+    <SolidColorBrush x:Key="ElDangerHoverBrush" Color="#F89898"/>
+    <SolidColorBrush x:Key="ElDangerActiveBrush" Color="#C45656"/>
+    <SolidColorBrush x:Key="ElInfoBrush" Color="#909399"/>
+    <SolidColorBrush x:Key="ElInfoHoverBrush" Color="#A6A9AD"/>
+    <SolidColorBrush x:Key="ElInfoActiveBrush" Color="#73767A"/>
+    <SolidColorBrush x:Key="ElDefaultBgBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ElDefaultBorderBrush" Color="#DCDFE6"/>
+    <SolidColorBrush x:Key="ElDefaultTextBrush" Color="#606266"/>
+    <SolidColorBrush x:Key="ElDefaultHoverBgBrush" Color="#ECF5FF"/>
+    <SolidColorBrush x:Key="ElDefaultHoverBorderBrush" Color="#C6E2FF"/>
+</ResourceDictionary>

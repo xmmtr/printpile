@@ -1,0 +1,188 @@
+<!--
+This file is part of PrintPile (https://printpile.cn).
+
+Copyright (C) 2026 the PrintPile developers
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<UserControl x:Class="BatchPrintCN.HistoryPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 修整13b（V4.4 二批）：工具栏原为 WrapPanel；52 号令·返修①（2026-10-06 需求方拍板）：改 Grid 两列——
+             左列＝标题＋计数；右列＝搜索/筛选/档位/刷新/导出 CSV 右对齐同排。
+             61 号令（2026-10-09 需求方拍板）：**52/55 号"窄窗允许折行"的旧口径就此废除**——右列由 WrapPanel 改成
+             单排 Grid（第 0 列 * 吃搜索框星宽，其余各占 Auto），结构上一行永远不折；同时压缩固定宽度给星宽让路
+             （打印机筛选 150→110、时间筛选 100→80、档位 120→70、导出 Padding 12,0→8,0、控件间距 8→6），
+             并删掉「筛选：」文字标签（下拉里的「全部打印机／全部时间」已自明）、「历史显示」文案改「显示」、
+             CountText 加 MaxWidth＋省略号防长计数撑胖左列。任何允许的窗口宽度（含最小宽 960）都不折行、不裁切。
+             55 号（2026-10-07 需求方拍板）：空态长文案移出标题行（见下方 EmptyText 覆盖层），标题行只留短计数。 -->
+        <Grid Grid.Row="0" Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                <TextBlock Text="{DynamicResource s.HistoryTitle}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                <!-- 61 号令：计数文本设宽度上限并省略——它不设上限时是撑胖左列、把右列挤到折行的最坏变量 -->
+                <TextBlock x:Name="CountText" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxWidth="110"/>
+            </StackPanel>
+            <!-- 61 号令：右列＝单排 Grid（不再用 WrapPanel，结构上不可能折行）；第 0 列 * 让搜索框吃掉全部余量 -->
+            <Grid Grid.Column="1" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" MinWidth="70" Height="30" VerticalAlignment="Center" Margin="0,0,6,0">
+                    <TextBox x:Name="SearchBox" FontSize="12" VerticalContentAlignment="Center" TextChanged="OnSearchChanged"/>
+                    <TextBlock x:Name="SearchHint" Text="{DynamicResource s.HistorySearch}" Margin="8,0,4,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" IsHitTestVisible="False" TextWrapping="NoWrap"/>
+                </Grid>
+                <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="FilterPrinter" Grid.Column="1" Width="110" Height="30" VerticalAlignment="Center" FontSize="12" Margin="0,0,6,0" SelectionChanged="OnFilterChanged"/>
+                <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="FilterRange" Grid.Column="2" Width="80" Height="30" VerticalAlignment="Center" FontSize="12" Margin="0,0,6,0" SelectionChanged="OnFilterChanged"/>
+                <!-- 61 号令：「筛选：」标签已删（s.HistoryFilter 随之成对下架）；「历史显示」文案改「显示」，键不动 -->
+                <TextBlock Grid.Column="3" Text="{DynamicResource s.HistoryLimit}" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" TextWrapping="NoWrap"/>
+                <!-- 61 号令：档位框本令定 70，实测与 V4.2 修整一既有断言冲突（该断言要求最宽档位项留在"框宽−34"的可用区内：
+                     中文最宽「最近十天」48.0、英文原最宽「200 rows」51.9，而 70 只给到 36 → 判"档位项折行"），故取 **84**（可用 50）。
+                     英文三项按需求方 2026-10-09 拍板走"只改文案、不动框宽与结构"一路线收窄：Last 10 days→10 days、200 rows→200、100 rows→100
+                     （改后英文最宽项「10 days」实测约 40.0 ≤ 50）；960 视口下搜索框实宽 84.8 ＞ MinWidth 70 → 单排且不裁。
+                     73 号令：「无限制」档对所有人敞开后英文项 Unlimited（56.1）撑破同一可用区 → 沿 61 号"只改文案、不动框宽"路线改判为 All。 -->
+                <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="LimitBox" Grid.Column="4" Width="84" Height="30" VerticalAlignment="Center" FontSize="12" Margin="0,0,6,0" SelectionChanged="OnLimitChanged"/>
+                <!-- V4.4 三批·修复B：内容是元素的按钮不吃 Styles.xaml 那份默认模板，字色在元素上就地钉回按钮的 Foreground
+                     （否则被应用级隐式 TextBlock 样式抢走 → 深色主题白底按钮白字；本地值优先级高于样式 setter） -->
+                <Button x:Name="BtnRefresh" Grid.Column="5" Width="34" Height="30" Margin="0,0,6,0" Padding="0" VerticalAlignment="Center" Style="{StaticResource BtnOutline}" FontSize="13" Click="OnRefresh">
+                    <TextBlock Text="⟳" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="NoWrap"
+                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                </Button>
+                <!-- 52 号令·返修①：与档位/刷新同排右对齐；73 号令起导出 CSV 常亮（按钮不再受任何状态影响） -->
+                <Button x:Name="BtnExport" Grid.Column="6" Height="30" Padding="8,0" VerticalAlignment="Center" Style="{StaticResource BtnPrimary}" FontSize="12" Click="OnExport">
+                    <TextBlock Text="{DynamicResource s.HistoryExport}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="NoWrap"
+                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                </Button>
+            </Grid>
+        </Grid>
+
+        <!-- 55 号：空态文案在表格区域居中（文案由 UpdateCountText 写入），不再占据工具栏宽度；不挡表格交互。
+             61 号令修 z 序（55 号遗留缺陷）：本元素原本排在下方表格卡片**之前**，而卡片 CardBorder 带不透明底色
+             CardBgBrush → WPF 后画的盖前画的，空态文案被完全遮住＝需求方截图里"文案不现身"的根因。
+             现给 ZIndex=1 让它画在卡片之上；IsHitTestVisible=False 保持不变，因此仍不挡表格交互。 -->
+        <TextBlock x:Name="EmptyText" Grid.Row="1" Panel.ZIndex="1"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"
+                   Visibility="Collapsed" IsHitTestVisible="False" TextWrapping="NoWrap"/>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}" ClipToBounds="True">
+            <!-- 修整3（V4.4）→ 修整14（二批）：与主列表完全同口径——DataGrid 自身网格线关闭，
+                 横线＝整行底边（GridRowLine）、竖线＝单元格右边框（GridCellLine），外框 0.5 细直线；
+                 列头用同一份 NoGripHeader（修整15：两页列头文字居中加粗、⇅ 图标随文字整体居中）。
+                 修整13b：窄窗口下靠横向滚动条兜底；RowHeight 固定 + 单元格不折行（CellText）→ 行高不随文字浮动。
+                 修整5（V4.4）：CanUserResizeColumns=False，去掉列头两侧的列宽把手（＝真机看到的"黑色条状物"） -->
+            <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                      SelectionMode="Extended" RowHeaderWidth="0" HeadersVisibility="Column"
+                      RowHeight="36" UseLayoutRounding="True" SnapsToDevicePixels="True"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      CanUserResizeColumns="False" ColumnHeaderStyle="{StaticResource NoGripHeader}"
+                      RowStyle="{StaticResource GridRowLine}" CellStyle="{StaticResource GridCellLine}"
+                      GridLinesVisibility="None" BorderThickness="0.5"
+                      BorderBrush="{DynamicResource GridLineBrush}">
+                <DataGrid.Columns>
+                    <!-- F16（V4.3）：可排序列头统一带 ⇅ 提示 + tooltip；打印机列头带漏斗下拉筛选；引擎列隐藏（数据层不动） -->
+                    <!-- 修整13/14（二批）：文件名列改星号宽（与主列表同口径）——列总宽撑满可视区，
+                         整行底边横线因此一直画到表格右边，不再有"线到最后一列就停"的缺口。
+                         修整21a（五批）：最小窗 960 下固定列合计 746 > 内层可视 694.4 必然出横向条，
+                         按需求方口径压窄 文件夹 150→110、打印机 150→110、文件名保底 140→120；
+                         时间列 126→134 而不是需求方建议的 ~110——实测 "2026-09-23 12:34" 文本 118.1 DIP + 单元格左右内边距 12
+                         = 130.1 > 116（110 更装不下），时间是被读的不是被点的，宁留全量；
+                         状态列 60→70 是同一批新护栏抓出来的旧账：英文 "Status"+⇅ 实宽 52.8 + 列头内边距 16 = 68.8 > 60，
+                         列头是 NoWrap 所以不折行、直接被裁（数字来自 960 档"列头不被裁"断言）。
+                         压完固定列合计 544（页数/份数按保底 60 计），960 档文件名实得 ~150 → 两档都不出横向滚动条。
+                         会截断的文本列全部挂 CellTextTip（悬浮 1 秒显全值，同主页 CellTextName 口径）。 -->
+                    <DataGridTextColumn x:Name="ColName" Binding="{Binding Name}" Width="*" MinWidth="120" ElementStyle="{StaticResource CellTextTip}">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
+                                <TextBlock Text="{DynamicResource s.HistoryName}" TextWrapping="NoWrap"/>
+                                <TextBlock Text="⇅" FontSize="10" Margin="4,0,0,0" Opacity="0.55" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding FolderText}" Width="110" MinWidth="90" ElementStyle="{StaticResource CellTextTip}">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
+                                <TextBlock Text="{DynamicResource s.HistoryFolder}" TextWrapping="NoWrap"/>
+                                <TextBlock Text="⇅" FontSize="10" Margin="4,0,0,0" Opacity="0.55" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding Pages}" Width="Auto" MinWidth="60" ElementStyle="{StaticResource CellText}">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
+                                <TextBlock Text="{DynamicResource s.ColPages}" TextWrapping="NoWrap"/>
+                                <TextBlock Text="⇅" FontSize="10" Margin="4,0,0,0" Opacity="0.55" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding Copies}" Width="Auto" MinWidth="60" ElementStyle="{StaticResource CellText}">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
+                                <TextBlock Text="{DynamicResource s.ColCopies}" TextWrapping="NoWrap"/>
+                                <TextBlock Text="⇅" FontSize="10" Margin="4,0,0,0" Opacity="0.55" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <!-- V4.5-2（决2）：状态值不再由存储层直出中文——HistoryRow.Success（结构化布尔）决定文案与上色，
+                         StatusText 按当前界面语言取 s.HistStatusOk/s.HistStatusFail（切英文即显英文），
+                         上色沿用主页修整16 的两枚主题键（成功绿/失败红），气泡提示沿用 CellTextTip 口径。 -->
+                    <DataGridTextColumn Binding="{Binding StatusText}" Width="70" ElementStyle="{StaticResource CellTextHistStatus}">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
+                                <TextBlock Text="{DynamicResource s.HistoryStatus}" TextWrapping="NoWrap"/>
+                                <TextBlock Text="⇅" FontSize="10" Margin="4,0,0,0" Opacity="0.55" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding Time, StringFormat=yyyy-MM-dd HH:mm}" Width="134" ElementStyle="{StaticResource CellTextTip}">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
+                                <TextBlock Text="{DynamicResource s.ColTime}" TextWrapping="NoWrap"/>
+                                <TextBlock Text="⇅" FontSize="10" Margin="4,0,0,0" Opacity="0.55" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding Printer}" Width="110" ElementStyle="{StaticResource CellTextTip}">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
+                                <TextBlock Text="{DynamicResource s.Printer}" TextWrapping="NoWrap"/>
+                                <!-- F16：打印机列头下拉筛选（与顶部工具栏打印机筛选同一状态） -->
+                                <Button x:Name="PrinterFilterButton" Content="▼" FontSize="9" Margin="6,0,0,0" Padding="6,1"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center"
+                                        Foreground="{DynamicResource TextSecondaryBrush}" Click="OnPrinterFilterClick"
+                                        ToolTipService.ToolTip="{DynamicResource s.HistoryFilterByPrinter}"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</UserControl>
