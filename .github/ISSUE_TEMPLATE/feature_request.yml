@@ -1,0 +1,34 @@
+name: 功能建议
+description: 说明场景与期望，帮助判断优先级
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 你在做什么工作？一次处理多少文件？现在怎么解决？
+      placeholder: 例如：每月要打印约 200 份报销单，现在只能分成 10 次打印……
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的改法
+      description: 你希望软件怎么操作、界面放在哪里
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 现有替代方案
+      description: 目前有没有别的软件或手工办法可以达到类似效果
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围确认
+      options:
+        - label: 我理解本项目不接受云端上传、捆绑推广、绕过许可证类需求
+          required: true

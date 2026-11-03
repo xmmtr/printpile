@@ -90,6 +90,13 @@ LICENSE                       # GNU GPLv3 全文
 **安装时提示不安全？**
 安装包未签名，SmartScreen 会提示。确认来源为 printpile.cn 后，点“更多信息 → 仍要运行”。
 
+## 参与贡献
+
+- [贡献指南](CONTRIBUTING.md)
+- [更新日志](CHANGELOG.md)
+- [安全策略](SECURITY.md)
+- [文档索引](docs/README.md)
+
 ## 许可证
 
 本软件以 [GNU General Public License v3.0](LICENSE) 发布：你可以自由地使用、学习、修改和再分发，分发时请遵循 GPLv3 的相应义务（如随附许可证文本并提供相应源码）。
