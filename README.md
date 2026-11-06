@@ -18,6 +18,12 @@
 - **界面**：浅色 / 深色 / 多套主题，中英双语
 - **隐私优先**：仅本机打印，不上传任何文档内容
 
+## 源码镜像与渠道
+
+- GitHub（本仓，Release 附件直下）：<https://github.com/xmmtr/printpile>
+- Gitee 镜像（大陆直连，附件与 GitHub 同源同哈希）：<https://gitee.com/xmmtr/printpile>
+- 官网（在线更新渠道与文档）：<https://printpile.cn>
+
 ## 官网与在线工具
 
 - 官网：<https://printpile.cn>
@@ -26,11 +32,15 @@
 
 ## 下载安装
 
-| 版本 | 适用系统 | 下载 |
+| 版本 | 适用系统 | 直接下载（Release 附件） |
 | --- | --- | --- |
-| 1.2.1 安装版 | Windows 10 / 11 x64 | [PrintPile-Setup-v1.2.1.exe](https://printpile.cn/dl/PrintPile-Setup-v1.2.1.exe) |
-| 1.3.0 安装版 | Windows 7 SP1 x64 | [PrintPile-v1.3.0-win7-Setup.exe](https://printpile.cn/dl/PrintPile-v1.3.0-win7-Setup.exe) |
-| 1.3.0 便携版 | Windows 7 SP1 x64 | [PrintPile-v1.3.0-win7.zip](https://printpile.cn/dl/PrintPile-v1.3.0-win7.zip) |
+| 1.2.1 安装版 | Windows 10 / 11 x64 | [PrintPile-Setup-v1.2.1.exe](https://github.com/xmmtr/printpile/releases/download/v1.2.1/PrintPile-Setup-v1.2.1.exe) |
+| 1.2.1 便携版 | Windows 10 / 11 x64 | [PrintPile-v1.2.1-portable.zip](https://github.com/xmmtr/printpile/releases/download/v1.2.1/PrintPile-v1.2.1-portable.zip) |
+| 1.3.0 安装版 | Windows 7 SP1 x64 | [PrintPile-v1.3.0-win7-Setup.exe](https://github.com/xmmtr/printpile/releases/download/v1.3.0-win7/PrintPile-v1.3.0-win7-Setup.exe) |
+| 1.3.0 便携版 | Windows 7 SP1 x64 | [PrintPile-v1.3.0-win7.zip](https://github.com/xmmtr/printpile/releases/download/v1.3.0-win7/PrintPile-v1.3.0-win7.zip) |
+| 1.3.0 源码包 | 构建/审计用 | [PrintPile-Lite-v1.3.0-src.zip](https://github.com/xmmtr/printpile/releases/download/v1.3.0-win7/PrintPile-Lite-v1.3.0-src.zip) |
+
+> 所有附件均附 SHA256SUMS.txt 校验清单；大陆网络可改用 Gitee 镜像同名 Release：`https://gitee.com/xmmtr/printpile/releases`（附件与 GitHub 同源同哈希）。
 
 - 安装包双击安装，自带卸载器；便携版解压即用，不写注册表。
 - 安装包暂未做代码签名，Windows SmartScreen 可能提示“已保护你的电脑”，点“更多信息 → 仍要运行”即可。
@@ -118,4 +128,4 @@ LICENSE                       # GNU GPLv3 全文
 - Local processing only — files are never uploaded
 - Free, GPLv3
 
-Download: <https://printpile.cn>
+Download: <https://github.com/xmmtr/printpile/releases> | Mirror: <https://gitee.com/xmmtr/printpile> | Site: <https://printpile.cn>
