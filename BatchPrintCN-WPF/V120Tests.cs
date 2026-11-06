@@ -180,7 +180,7 @@ namespace BatchPrintCN
                 sb.AppendLine("— ⑤ 资源文案里被禁字样命中数=" + hits + "（词表：" + string.Join("/", BannedWords) + "）");
                 Check(bad, "73 号 字样门槛：中英两本文案里那六个被禁字样 0 命中（词表见 BannedWords，字面量拆开以免自污染）", hits == 0);
 
-                // ===== ⑥ 版本：1.2.0.0（三位数口径 D-20，第二位进位） =====
+                // ===== ⑥ 版本（80 号令就地改判：随主线走到 1.2.1.0；条目不删，钉的仍是「三处一致」这件事） =====
                 string fv = null, prod = null;
                 try
                 {
@@ -190,8 +190,8 @@ namespace BatchPrintCN
                 catch { }
                 string av = AppVersion.Full, disp = AppVersion.Display;
                 sb.AppendLine("— ⑥ 版本：FileVersion=" + fv + " ProductVersion=" + prod + " AssemblyVersion=" + av + " 界面＝" + disp);
-                Check(bad, "73 号 版本：FileVersion／AssemblyVersion 均 1.2.0.0，界面显示 v1.2.0",
-                    fv == "1.2.0.0" && av == "1.2.0.0" && disp == "v1.2.0");
+                Check(bad, "73 号 版本（80 号改判随主线 1.2.1.0）：FileVersion／AssemblyVersion 与界面三段号三处一致",
+                    fv == "1.2.1.0" && av == "1.2.1.0" && disp == "v1.2.1");
 
                 // ===== ⑦ 注册表退场（78 号·A1）：预置遗留键 → LegacyCleanup.Run() → 消失；连跑两次幂等不抛 =====
                 bool regBefore = LegacyCleanup.LegacyKeyExists();
@@ -213,11 +213,11 @@ namespace BatchPrintCN
                     + "；en「" + (navEn ? "Watch Folders" : K("s.NavWatch")) + "」=" + navEn);
                 Check(bad, "78 号 导航更名：s.NavWatch 中＝监视文件夹、英＝Watch Folders（改写不增删键）", navZh && navEn);
 
-                // B1：监视规则对话框的两个下拉，塞进一条超长候选并选中，实测每个下拉项文字相对其元素零裁切
+                // B1：监视规则对话框的两个下拉，塞进一条超长候选并选中，实测"单行＋放不下走省略号"两条判据
                 string clipDetail;
                 bool noClip = MeasureDialogComboClip(out clipDetail);
-                sb.AppendLine("— ⑧ B1 对话框下拉零裁切=" + noClip + "（" + clipDetail + "）");
-                Check(bad, "78 号 下拉修复：监视规则对话框打印机/模板下拉，最长项文字零裁切（浅/深各测）", noClip);
+                sb.AppendLine("— ⑧ B1 对话框下拉文字呈现合格=" + noClip + "（" + clipDetail + "）");
+                Check(bad, "78 号 下拉修复：监视规则对话框打印机/模板下拉，选中值与展开项一律单行、放不下时省略号收尾（浅/深各测）", noClip);
 
                 sb.AppendLine("— ⑨ 本轮临时目录：" + workDir + "（自检自造自删）");
             }
@@ -241,21 +241,22 @@ namespace BatchPrintCN
             }
             WriteDiag("73号开源改造定位.txt", sb.ToString());
             return bad.Count == 0
-                ? "通过（73/78 号：①码制/验签/限时体验期/对话框那套类型在两个程序集里全部不在场 ②老 settings.json 的遗留键读取忽略、回写不再带、其余键零丢失、不崩 ③导出 CSV 常亮＋历史五档含无限制且不截断＋监视页随时可新建并起观察者 ④关于页解锁区五控件与功能一览整块消失、只留 GPLv3 声明＋GitHub/Gitee 双按钮（中英各一份）⑤中英本文案被禁六词 0 命中 ⑥FileVersion/AssemblyVersion=1.2.0.0 ⑦注册表遗留键预置后 Run 删干净且二次幂等 ⑧导航键改名＋对话框两下拉最长项零裁切；逐条数字见 73号开源改造定位.txt）"
+                ? "通过（73/78 号：①码制/验签/限时体验期/对话框那套类型在两个程序集里全部不在场 ②老 settings.json 的遗留键读取忽略、回写不再带、其余键零丢失、不崩 ③导出 CSV 常亮＋历史五档含无限制且不截断＋监视页随时可新建并起观察者 ④关于页解锁区五控件与功能一览整块消失、只留 GPLv3 声明＋GitHub/Gitee 双按钮（中英各一份）⑤中英本文案被禁六词 0 命中 ⑥FileVersion/AssemblyVersion=1.2.1.0（80 号改判随主线） ⑦注册表遗留键预置后 Run 删干净且二次幂等 ⑧导航键改名＋对话框两下拉文字单行、放不下走省略号（根因＝全局隐式 TextBlock 的 Wrap 被 ContentPresenter 继承）；逐条数字见 73号开源改造定位.txt）"
                 : "失败：" + string.Join("；", bad);
         }
 
         /// <summary>
-        /// 78 号令·B1：实测监视规则对话框两个下拉的文字是否被裁切（浅/深各一遍），并出两张取证图。
-        /// 两处都量：①下拉展开后每个 ComboBoxItem 里的文字；②收起状态下 ComboBox 自身显示选中值的那块文字
-        /// （需求方反馈的"显示不全"可能落在选中值而非列表项，两处都钉住才敢说零裁切）。
-        /// 做法＝RenderDialog 同款：把 Window 的 Content 摘下挂进 Border 离屏实例化→给打印机/模板下拉各塞
-        /// 一条比真机最长还长的压力项并选中→用 FormattedText 算文字真实宽高与元素实宽高比对（超 0.75px 记裁切）。
+        /// 78 号令·B1：实测监视规则对话框两个下拉的文字呈现（浅/深各一遍），并出两张取证图。
+        /// 判据两条（缺一即红）：①**不许折行**——显示区/项里的 TextBlock 实高必须＝一行高（需求方看到的"显示不全"
+        /// 根因就是 Styles.xaml 第 9 行那份全局隐式 TextBlock 样式 Wrap 被 ContentPresenter 生成的文字继承，
+        /// 长打印机名折成两行、30 高的框只露半截）；②**横向放不下时必须走省略号**（TextTrimming＝CharacterEllipsis），
+        /// 绝不允许硬切在半个字上；悬停有全文气泡，信息不丢。
+        /// 两处都量：收起状态的选中值显示区 ＋ 展开状态的每一条下拉项。
         /// </summary>
         private static bool MeasureDialogComboClip(out string detail)
         {
-            var worst = new List<string>();
-            bool ok = true;
+            var bad2 = new List<string>();
+            int measured = 0;
             foreach (var theme in new[] { AppTheme.Light, AppTheme.Dark })
             {
                 App.ApplyTheme(theme);
@@ -280,23 +281,7 @@ namespace BatchPrintCN
                     string which = box == dlg.PrinterBoxForTest ? "打印机" : "模板";
                     // ① 收起态：下拉框自身显示选中值的那块文字（选中值被截断就是需求方说的"显示不全"）
                     var sel = FirstTextBlock(box);
-                    if (sel != null && !string.IsNullOrEmpty(sel.Text))
-                    {
-                        double ov, oh; ClipOver(sel, out ov, out oh);
-                        if (ov > 0.75 || oh > 0.75)
-                        {
-                            ok = false;
-                            worst.Add(theme + "/" + which + "·选中值 文字高" + ov.ToString("0.0") + " 宽" + oh.ToString("0.0")
-                                + " 超元素（元素 " + sel.ActualHeight.ToString("0.0") + "×" + sel.ActualWidth.ToString("0.0") + "）");
-                        }
-                        // 诊断：把 NoWrap＋省略号钉在这枚 TextBlock 上，看是否一行收得下（决定修法形态，验完删）
-                        sel.TextWrapping = TextWrapping.NoWrap;
-                        sel.TextTrimming = TextTrimming.CharacterEllipsis;
-                        box.UpdateLayout(); PumpToLoaded();
-                        double ov2, oh2; ClipOver(sel, out ov2, out oh2);
-                        worst.Add("[诊断]" + theme + "/" + which + " 钉NoWrap后 元素" + sel.ActualHeight.ToString("0.0")
-                            + "×" + sel.ActualWidth.ToString("0.0") + " 高差" + ov2.ToString("0.0") + " 宽差" + oh2.ToString("0.0"));
-                    }
+                    if (sel != null) { measured++; TextVerdict(sel, theme + "/" + which + "·选中值", bad2); }
                     // ② 展开态：逐个数下拉项里的文字
                     box.IsDropDownOpen = true;
                     PumpToLoaded();
@@ -306,14 +291,8 @@ namespace BatchPrintCN
                         if (ci == null) continue;
                         var tb = FirstTextBlock(ci);
                         if (tb == null || string.IsNullOrEmpty(tb.Text)) continue;
-                        double vOver, hOver; ClipOver(tb, out vOver, out hOver);
-                        if (vOver > 0.75 || hOver > 0.75)
-                        {
-                            ok = false;
-                            worst.Add(theme + "/" + which + "[" + i + "] 超元素 高" + vOver.ToString("0.0")
-                                + " 宽" + hOver.ToString("0.0") + "（元素 " + tb.ActualHeight.ToString("0.0") + "×"
-                                + tb.ActualWidth.ToString("0.0") + "）");
-                        }
+                        measured++;
+                        TextVerdict(tb, theme + "/" + which + "·项[" + i + "]", bad2);
                     }
                     box.IsDropDownOpen = false;
                 }
@@ -324,19 +303,26 @@ namespace BatchPrintCN
                 host.Child = null;
             }
             App.ApplyTheme(AppTheme.Light);
-            detail = worst.Count == 0 ? "浅/深两主题、两下拉的「选中值显示区」与「展开项」全部文字均在元素内" : string.Join("；", worst);
-            return ok;
+            detail = bad2.Count == 0
+                ? measured + " 处文字全部单行、放不下的一律省略号收尾（浅/深两主题 × 选中值与展开项两处）"
+                : string.Join("；", bad2);
+            return bad2.Count == 0;
         }
 
-        /// <summary>一枚 TextBlock 的文字真实宽高相对元素实宽高各超出多少（≤0 即放得下）。</summary>
-        private static void ClipOver(TextBlock tb, out double vOver, out double hOver)
+        /// <summary>一枚承载文字的 TextBlock：判"有没有折行"与"放不下时是否省略号收尾"，不合格就记一条。</summary>
+        private static void TextVerdict(TextBlock tb, string tag, List<string> into)
         {
+            if (tb == null || string.IsNullOrEmpty(tb.Text)) return;
             var ft = new FormattedText(tb.Text, System.Globalization.CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
                 new Typeface(tb.FontFamily, tb.FontStyle, tb.FontWeight, tb.FontStretch),
                 tb.FontSize, Brushes.Black, 96.0);
-            vOver = ft.Height - tb.ActualHeight;
-            hOver = ft.WidthIncludingTrailingWhitespace - tb.ActualWidth;
+            if (tb.ActualHeight > ft.Height + 0.75)
+                into.Add(tag + " 折成 " + (tb.ActualHeight / Math.Max(1.0, ft.Height)).ToString("0.0")
+                    + " 行（一行 " + ft.Height.ToString("0.0") + "，元素高 " + tb.ActualHeight.ToString("0.0") + "）");
+            else if (ft.WidthIncludingTrailingWhitespace > tb.ActualWidth + 0.75 && tb.TextTrimming == TextTrimming.None)
+                into.Add(tag + " 文字宽 " + ft.Width.ToString("0.0") + " ＞ 元素宽 " + tb.ActualWidth.ToString("0.0")
+                    + " 且没有省略号（硬切）");
         }
 
         private static TextBlock FirstTextBlock(DependencyObject root)

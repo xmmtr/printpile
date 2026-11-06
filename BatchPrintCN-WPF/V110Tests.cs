@@ -102,10 +102,11 @@ namespace BatchPrintCN
 
                 // settings.json 键账零新增（规则落自己的文件，72 号键账纪律）
                 // 73 号令就地改判：DTO 由 13 枚减为 **11 枚**——LicenseCode 与 TrialStart 两枚随解锁方案一并删除
+                // 80 号令就地改判：11 → **12 枚**——本令新增 autoStart 一枚（开机自启动意图），这是 72/73 号以来第一次动 DTO，理由与影响见 80 号令回执
                 //（本令对键账只做核减、不做新增，"零新增"这条纪律不变）。
                 var persistType = typeof(SettingsService).GetNestedType("Persist", System.Reflection.BindingFlags.NonPublic);
                 int keys = persistType == null ? -1 : persistType.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).Length;
-                Check(bad, "72 号 键账对账（73 号改判 13→11）：settings.json 持久化 DTO 现 " + keys + " 枚（本令零新增设置键，规则另落 data\\watch-rules.json）", keys == 11);
+                Check(bad, "72 号 键账对账（73 号改判 13→11；80 号改判 11→12）：settings.json 持久化 DTO 现 " + keys + " 枚（72 号那枚规则文件仍在 data\\watch-rules.json，不进设置）", keys == 12);
 
                 // ===== ② 时段过滤纯函数矩阵（全天／正常档／两端边界／跨零点／坏格式放行） =====
                 bool w1 = WatchRules.InWindow(V110T0, true, "08:00", "18:00");                                   // 全天＝恒真
@@ -287,8 +288,8 @@ namespace BatchPrintCN
                 try { fv = FileVersionInfo.GetVersionInfo(Process.GetCurrentProcess().MainModule.FileName).FileVersion; } catch { }
                 string av = AppVersion.Full, disp = AppVersion.Display;
                 sb.AppendLine("— 72 号 版本：FileVersion=" + fv + " AssemblyVersion=" + av + " 界面版本＝" + disp);
-                Check(bad, "72 号 版本实升（73 号令就地改判为 1.2.0.0）：运行中程序 FileVersion／AssemblyVersion＝1.2.0.0、界面显示三段 v1.2.0（D-20 三位数口径不变）",
-                    fv == "1.2.0.0" && av == "1.2.0.0" && disp == "v1.2.0");
+                Check(bad, "72 号 版本实升（73 号令改判 1.2.0.0；80 号令再改判 1.2.1.0）：运行中程序 FileVersion／AssemblyVersion＝1.2.1.0、界面显示三段 v1.2.1（D-20 三位数口径不变）",
+                    fv == "1.2.1.0" && av == "1.2.1.0" && disp == "v1.2.1");
 
                 // ===== ⑨ 新增文案在当前语言取得到值（中英成对由资源键守护那条核统一管） =====
                 // 73 号令就地改判：原清单里的 s.WatchLockTitle（未解锁引导态）与 s.LicFeatWatch（企业清单行）
@@ -325,7 +326,7 @@ namespace BatchPrintCN
                   + "目录保护五档全拒（空/不存在/程序自身/过长/互为嵌套）且编辑自己不误伤；"
                   + "模板落成逐文件覆盖、生效参数逐档等于模板值，不绑模板时跟随全局（EffectiveOptions 唯一解析路径）；"
                   + "监视不再有解锁状态：启用中的规则一律起观察者、页面「新建规则」随时可点（73 号令就地改判原三态那条）；对话框当场拦三种非法且合法才写回；"
-                  + "打印后移动零删除（撞名加序号）；FileVersion=1.2.0.0（73 号令实升）；逐条数字见 72号监视文件夹F7定位.txt）"
+                  + "打印后移动零删除（撞名加序号）；FileVersion=1.2.1.0（80 号令末位进位）；逐条数字见 72号监视文件夹F7定位.txt）"
                 : "失败：" + string.Join("；", bad);
         }
 

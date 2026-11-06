@@ -418,7 +418,8 @@ namespace BatchPrintCN
             var box = new ComboBox
             {
                 Width = width,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                ItemTemplate = (DataTemplate)Application.Current.FindResource("ComboTextTemplate")
             };
             box.Items.Add(L("s.FollowGlobal"));
             if (itemKeys != null)

@@ -45,6 +45,7 @@ namespace BatchPrintCN
         private static CloseBehavior _closeBehavior = CloseBehavior.Ask;   // V4.9-1：✕ 关闭行为（老配置无此键＝ask）
         // 49 号·版2/版3：自动检查更新（老配置无键＝开）、上一次自动检查发起的时刻（ISO 字符串）、更新渠道（老配置无键＝正式版）
         private static bool _autoCheckUpdate = true;
+        private static bool _autoStart;   // 80 号令（V1.2.1）：开机自启动意图（缺键＝关；真正落不落 Run 键由 AutoStart 按这份意图对齐）
         private static string _lastAutoCheckUtc;
         private static UpdateChannel _updateChannel = UpdateChannel.Stable;
         // 52 号令·步骤 4：主题名（ThemeService 的主题选择；旧配置迁移：Theme=dark→深色、light→浅色）。
@@ -133,6 +134,20 @@ namespace BatchPrintCN
         {
             if (_autoCheckUpdate == on) return;
             _autoCheckUpdate = on;
+            Save();
+        }
+
+        /// <summary>
+        /// 80 号令（V1.2.1）：开机自启动的**用户意图**（默认关）。这里存的不是"注册表里现在有没有键"，
+        /// 而是"用户要不要自启动"——Run 键由 <see cref="AutoStart"/> 按这份意图对齐（启动时补写、关掉时删除）。
+        /// </summary>
+        public static bool AutoStart { get { return _autoStart; } }
+
+        /// <summary>80 号令：设置页开关走这一句——先记意图并落 settings.json，再由调用方同步 Run 键（顺序＝先意图后动作）。</summary>
+        public static void SetAutoStart(bool on)
+        {
+            if (_autoStart == on) return;
+            _autoStart = on;
             Save();
         }
 
@@ -264,6 +279,7 @@ namespace BatchPrintCN
             public string UpdateChannel { get; set; }     // 49 号·版3：更新渠道 stable|preview（缺键＝正式版）
             public bool? FeedbackAutoLogs { get; set; }   // 52 号令·返修③：反馈自动打包日志（**可空**——缺键按默认开，同 AutoCheckUpdate 口径）
             public string ThemeName { get; set; }         // 52 号令·步骤 4：主题名（缺键＝旧 Theme 键迁移）
+            public bool AutoStart { get; set; }           // 80 号令（V1.2.1）：开机自启动意图（缺键＝false，正是默认关；回写一律带上）
             // V4.8-1（36 号令定夺）：后端基址是产品属性不是用户配置，不再有 ApiBase 键——
             // 老 settings.json 里残留的 "ApiBase" 因不在本 DTO 里，读取时被忽略、下次保存即消失。
             // V4.9 修整第二批·修D（同一口径）：Engine / ReportDirectory / KeepConvertedPdf / ConvertOutputDirectory /
@@ -299,6 +315,7 @@ namespace BatchPrintCN
                 _updateChannel = ParseChannel(p.UpdateChannel);
                 // 52 号令·返修③：老配置无此键＝开（ParseAutoCheck 同款口径）
                 _feedbackAutoLogs = p.FeedbackAutoLogs ?? true;
+                _autoStart = p.AutoStart;   // 80 号令：老配置无此键 → JSON 给 false，正是"默认关"，不需要可空兜底
                 _themeName = string.IsNullOrWhiteSpace(p.ThemeName) ? null : p.ThemeName.Trim();
             }
             catch { /* 损坏的设置文件忽略，使用默认 */ }
@@ -337,7 +354,8 @@ namespace BatchPrintCN
                         LastAutoCheckUtc = _lastAutoCheckUtc,                 // 49 号·版2（没查过就写 null，读回来仍是"没查过"）
                         UpdateChannel = ChannelToKey(_updateChannel),         // 49 号·版3
                         FeedbackAutoLogs = _feedbackAutoLogs,                 // 52 号令·返修③
-                        ThemeName = _themeName                                // 52 号令·步骤 4
+                        ThemeName = _themeName,                               // 52 号令·步骤 4
+                        AutoStart = _autoStart                                // 80 号令（V1.2.1）：意图一律回写（老配置升上来就补上这枚）
                     };
                     File.WriteAllText(SettingsPath, JsonSerializer.Serialize(p));
                 }

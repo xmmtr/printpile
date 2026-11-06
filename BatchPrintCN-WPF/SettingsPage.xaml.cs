@@ -44,6 +44,7 @@ namespace BatchPrintCN
             BuildThemeCards();
             CloseBox.SelectedIndex = CloseIndexOf(SettingsService.CloseBehavior);   // V4.9-1：关闭行为三选
             ReportEnableBox.IsChecked = SettingsService.PrintReport;
+            AutoStartBox.IsChecked = SettingsService.AutoStart;   // 80 号令（V1.2.1）：开机自启动（缺键＝关；_loading 挡着，回填不触发写注册表）
             _loading = false;
         }
 
@@ -277,6 +278,25 @@ namespace BatchPrintCN
             if (_loading) return;
             SettingsService.SetPrintReport(ReportEnableBox.IsChecked == true);
         }
+
+        /// <summary>
+        /// 80 号令（V1.2.1）·开机自启动：先记意图（settings.json），再立刻落到 HKCU 的 Run 键——
+        /// 开＝写"带引号的当前 exe 全路径"，关＝删值。写失败（权限/安全软件拦）不弹框、不回滚开关：
+        /// 意图已经记下，下次启动 <see cref="AutoStart.SyncOnStartup"/> 会再对齐一次，失败原因只进日志一句。
+        /// </summary>
+        private void OnAutoStartChanged(object sender, RoutedEventArgs e)
+        {
+            if (_loading) return;
+            bool on = AutoStartBox.IsChecked == true;
+            SettingsService.SetAutoStart(on);
+            if (!AutoStart.Apply(on))
+                FileLogger.Write("设置：开机自启动写入失败（意图已记为" + (on ? "开" : "关") + "，下次启动再对齐）");
+        }
+
+        /// <summary>80 号令·自检取用口：开关本体与当前显示态。</summary>
+        internal Wpf.Ui.Controls.ToggleSwitch AutoStartBoxForTest { get { return AutoStartBox; } }
+        internal bool AutoStartShownForTest { get { return AutoStartBox != null && AutoStartBox.IsChecked == true; } }
+        internal void SetAutoStartForTest(bool on) { if (AutoStartBox != null) AutoStartBox.IsChecked = on; }
 
     }
 }

@@ -36,11 +36,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
        V1.2.0（73 号开工令 2026-10-15，D-36 推翻 D-24）：全面 free & open（许可证改 GPLv3）——码制、验签、解锁状态、
        限时体验期、功能限额整体拆除，所有功能无条件下全量可用；本目录＝v1.1.0 已提交树的整体副本，此后 v1.1.0 冻结只读。
        ProductFlavor 属性值**维持 commercial 不动**：它只是 UpdateChecker 的清单文件名分流开关（值改就要动 UpdateChecker，
-       违反 73 号 Rule 3 的"打印链路与更新链路零改动"），与本令取消的收费模式无关。 -->
+       违反 73 号 Rule 3 的"打印链路与更新链路零改动"），与本令取消的收费模式无关。
+       V1.2.1（80 号开工令 2026-10-17）：设置页新增「开机自启动」开关（HKCU 的 CurrentVersion\Run 值名 PrintPile，
+       默认关、开即写关即删、每次启动按 settings.json 里的意图对齐）；本目录＝v1.2.0 已提交树以 git archive 导出，
+       此后 v1.2.0 与 v1.2.0-win7 两树一并冻结只读。D-20 三位数口径：功能新增＝末位 +1，对外三位 1.2.1。 -->
   <PropertyGroup>
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.1</Version>
+    <AssemblyVersion>1.2.1.0</AssemblyVersion>
+    <FileVersion>1.2.1.0</FileVersion>
     <!-- 52 号令 D-14：更新清单分流开关，只许取 commercial / free 两个值（见上方 V1.2.0 段的不动理由）。 -->
     <ProductFlavor>commercial</ProductFlavor>
     <LangVersion>latest</LangVersion>

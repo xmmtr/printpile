@@ -92,6 +92,11 @@ namespace BatchPrintCN
             SettingsService.Load();
             ApplyLanguage(SettingsService.Language);
 
+            // 80 号令（V1.2.1）：开机自启动按**意图**对齐 Run 键——意图为开而键缺失就补写、意图为关就确保无键
+            //（用户在系统里手工删键属外部干预，下次启动按意图补回；程序换了目录也由这一步自动修正）。
+            // 四项自检模式不写注册表（与 49 号"自检不起定时器"同一口径），自检要测的往返由 80 号自检段自己做完并清理。
+            if (!GateMode) AutoStart.SyncOnStartup();
+
             // 52 号令·步骤 4：主题引擎恢复——扫描用户主题（data\themes\）→ 按保存的主题名应用（缺键按旧 Theme 键迁移）。
             // ThemeService.Apply 内部先按 mode 走 App.ApplyTheme（WPF-UI 深浅基座），再叠加 12 令牌色。
             ThemeService.ScanUserThemes();

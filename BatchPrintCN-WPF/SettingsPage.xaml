@@ -102,22 +102,50 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
             <!-- V4.9-1：关闭行为三选。V4.9 版本内修整第二批·修A：第二项语义升级为「最小化到托盘」
                  （settings.json 键值仍是 ask|minimize|exit，老配置兼容；minimize 现在＝窗口 Hide + 托盘图标在场）。
-                 沿用本页语言·外观同一写法：ComboBox + SelectedIndex 映射枚举，改动即存。 -->
+                 沿用本页语言·外观同一写法：ComboBox + SelectedIndex 映射枚举，改动即存。
+                 80 号令（V1.2.1）：同一张卡底部加第二行「开机自启动」——开关语义与生命周期同属一卡，
+                 且不新增第六张卡（V49b 那条"恰好五张卡片"的断言因此继续成立）。两行都用 Grid（标签 * ＋ 控件 Auto），
+                 控件一律贴卡片右缘，与 V4.7 修整1"行内控件钉最右"同一口径。 -->
             <ui:CardControl Padding="16,12" Margin="0,0,0,8">
                 <ui:CardControl.Icon>
                     <ui:SymbolIcon Symbol="Dismiss24" FontSize="20"/>
                 </ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource s.SettingsCloseTitle}" FontSize="14" FontWeight="SemiBold"/>
-                        <TextBlock Text="{DynamicResource s.SettingsCloseDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="{DynamicResource s.SettingsCloseTitle}" FontSize="14" FontWeight="SemiBold"/>
+                                <TextBlock Text="{DynamicResource s.SettingsCloseDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ComboBox Grid.Column="1" ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="CloseBox"
+                                      MinWidth="150" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                      SelectionChanged="OnCloseBehaviorChanged">
+                                <ComboBoxItem Content="{DynamicResource s.CloseAsk}"/>
+                                <ComboBoxItem Content="{DynamicResource s.CloseMinimize}"/>
+                                <ComboBoxItem Content="{DynamicResource s.CloseExit}"/>
+                            </ComboBox>
+                        </Grid>
+                        <!-- 80 号令·开机自启动：默认关；开＝写 HKCU 的 Run 值（值名 PrintPile，数据＝带引号 exe 全路径），
+                             关＝删值；每次启动再按 settings.json 里的意图对齐一次（AutoStart.SyncOnStartup）。 -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="{DynamicResource s.SettingsAutoStartTitle}" FontSize="14" FontWeight="SemiBold"/>
+                                <TextBlock Text="{DynamicResource s.SettingsAutoStartNote}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <!-- Wpf.Ui 4.3 的 ToggleSwitch 继承 ToggleButton：状态是 IsChecked、事件是 Checked/Unchecked -->
+                            <ui:ToggleSwitch Grid.Column="1" x:Name="AutoStartBox" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                             Checked="OnAutoStartChanged" Unchecked="OnAutoStartChanged"/>
+                        </Grid>
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="CloseBox" MinWidth="150" SelectionChanged="OnCloseBehaviorChanged">
-                    <ComboBoxItem Content="{DynamicResource s.CloseAsk}"/>
-                    <ComboBoxItem Content="{DynamicResource s.CloseMinimize}"/>
-                    <ComboBoxItem Content="{DynamicResource s.CloseExit}"/>
-                </ComboBox>
             </ui:CardControl>
 
             <!-- 打印统计（R3）：开关用 ToggleSwitch。修D 之后这一行是本页末行（底部间距归零，不留空白区）；

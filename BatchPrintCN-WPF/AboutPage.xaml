@@ -49,6 +49,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
             <WrapPanel Orientation="Horizontal" Margin="0,0,0,4">
                 <Button x:Name="BtnSite" Content="{DynamicResource s.AboutBtnSite}" Style="{StaticResource BtnOutline}"
                         Height="30" Padding="12,0" Margin="0,0,8,8" Click="OnOpenSite"/>
+                <Button x:Name="BtnGitHub" Content="GitHub" Style="{StaticResource BtnOutline}"
+                        Height="30" Padding="12,0" Margin="0,0,8,8" Click="OnGitHub"/>
+                <Button x:Name="BtnGitee" Content="Gitee" Style="{StaticResource BtnOutline}"
+                        Height="30" Padding="12,0" Margin="0,0,8,8" Click="OnGitee"/>
                 <Button x:Name="BtnData" Content="{DynamicResource s.AboutBtnData}" Style="{StaticResource BtnOutline}"
                         Height="30" Padding="12,0" Margin="0,0,8,8" Click="OnOpenDataDir"/>
                 <Button x:Name="BtnLog" Content="{DynamicResource s.AboutOpenLog}" Style="{StaticResource BtnOutline}"
@@ -131,25 +135,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
             </ui:CardControl>
 
             <!-- 78 号令·B3：关于页收口——「功能一览」整块（标题/导语/三行）连同五枚资源键一并删除，
-                 本页只留一行 GPLv3 开源声明，其下新增 GitHub／Gitee 两个仓库按钮（按钮文字用品牌名原文、
-                 不占资源键；地址为 AboutLinks 占位常量，77 号建仓后由需求方替换）。 -->
+                 本卡只留一行 GPLv3 开源声明。2026-10-16 需求方调整：GitHub／Gitee 两按钮移至顶部
+                 按钮行（官网按钮右侧），本卡不再放按钮。 -->
             <ui:CardControl x:Name="FeatureCard" Padding="16,12" Margin="0,8,0,0">
                 <ui:CardControl.Icon>
                     <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="20"/>
                 </ui:CardControl.Icon>
                 <ui:CardControl.Header>
-                    <StackPanel>
-                        <!-- 73 号令 Rule 5：关于页同步一行开源声明（全文见随包 LICENSE） -->
-                        <TextBlock x:Name="LicenseLineText" Text="{DynamicResource s.AboutLicenseLine}" FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <Button x:Name="BtnGitHub" Content="GitHub" Style="{StaticResource BtnOutline}"
-                                    Height="30" Padding="14,0" Click="OnGitHub"/>
-                            <Button x:Name="BtnGitee" Content="Gitee" Style="{StaticResource BtnOutline}"
-                                    Height="30" Padding="14,0" Margin="10,0,0,0" Click="OnGitee"/>
-                        </StackPanel>
-                    </StackPanel>
+                    <!-- 73 号令 Rule 5：关于页同步一行开源声明（全文见随包 LICENSE） -->
+                    <TextBlock x:Name="LicenseLineText" Text="{DynamicResource s.AboutLicenseLine}" FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </ui:CardControl.Header>
             </ui:CardControl>
 

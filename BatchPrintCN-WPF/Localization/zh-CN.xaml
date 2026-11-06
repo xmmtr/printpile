@@ -275,6 +275,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <sys:String x:Key="s.CloseRemember">不再提示，记住我的选择</sys:String>
     <sys:String x:Key="s.SettingsCloseTitle">关闭行为</sys:String>
     <sys:String x:Key="s.SettingsCloseDesc">点击标题栏关闭按钮 ✕ 时的处理方式</sys:String>
+    <!-- 80 号令（V1.2.1）·开机自启动（与关闭行为同一张卡的第二行；标题＋说明各一枚，中英成对） -->
+    <sys:String x:Key="s.SettingsAutoStartTitle">开机自启动</sys:String>
+    <sys:String x:Key="s.SettingsAutoStartNote">登录 Windows 后自动启动 PrintPile，仅对本机当前用户生效</sys:String>
     <sys:String x:Key="s.CloseAsk">每次询问</sys:String>
     <sys:String x:Key="s.CloseMinimize">最小化到托盘</sys:String>
     <sys:String x:Key="s.CloseExit">直接退出</sys:String>

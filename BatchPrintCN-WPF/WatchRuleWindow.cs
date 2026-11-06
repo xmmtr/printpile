@@ -42,6 +42,17 @@ namespace BatchPrintCN
         private readonly CheckBox _sub, _allDay, _keep, _move;
         private readonly ComboBox _printer, _template;
         private readonly TextBlock _error;
+
+        /// <summary>78 号令·B1：下拉框文字一律单行＋超出省略号（模板正本在 Styles.xaml 的 ComboTextTemplate，
+        /// 与第 9 行那份全局隐式 TextBlock 样式 Wrap 抢走导致的"折两行被竖向切字"同源）。取不到就退回默认呈现。</summary>
+        private static DataTemplate ComboText
+        {
+            get
+            {
+                try { return Application.Current == null ? null : (DataTemplate)Application.Current.FindResource("ComboTextTemplate"); }
+                catch { return null; }
+            }
+        }
         private bool _saved;
 
         /// <summary>自检注入点：非 null 时代替真「选择文件夹」对话框（返回路径，null＝用户取消）。产品代码不赋值。</summary>
@@ -122,7 +133,7 @@ namespace BatchPrintCN
 
             // ⑥ 打印模板
             AddLabel(grid, row, L("s.WatchDlgTemplate"), secBrush);
-            _template = new ComboBox { Height = 30, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13 };
+            _template = new ComboBox { Height = 30, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13, ItemTemplate = ComboText };
             _template.Items.Add(L("s.WatchTplNone"));
             foreach (var t in TemplateNames()) _template.Items.Add(t);
             _template.SelectedIndex = string.IsNullOrWhiteSpace(_rule.TemplateName) ? 0 : EnsureItem(_template, _rule.TemplateName);

@@ -273,6 +273,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <sys:String x:Key="s.CloseRemember">Don't ask again, remember my choice</sys:String>
     <sys:String x:Key="s.SettingsCloseTitle">Close button behaviour</sys:String>
     <sys:String x:Key="s.SettingsCloseDesc">What happens when you click the ✕ in the title bar</sys:String>
+    <!-- 80 号令（V1.2.1）·开机自启动（与关闭行为同一张卡的第二行；标题＋说明各一枚，中英成对） -->
+    <sys:String x:Key="s.SettingsAutoStartTitle">Start with Windows</sys:String>
+    <sys:String x:Key="s.SettingsAutoStartNote">Launch PrintPile automatically when you sign in to Windows (current user only)</sys:String>
     <sys:String x:Key="s.CloseAsk">Ask every time</sys:String>
     <sys:String x:Key="s.CloseMinimize">Minimize to tray</sys:String>
     <sys:String x:Key="s.CloseExit">Quit directly</sys:String>
