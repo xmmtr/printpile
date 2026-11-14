@@ -52,4 +52,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
   </ItemGroup>
+  <!-- v1.2.2：向 xUnit 测试工程（BatchPrintCN.Tests）开 internal 可见性——纯函数解析器与自检锚点
+       （Parse*/SearchMatch/LimitRows 等）多为 internal，测试要直取。只加不改，不涉任何运行行为。 -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="BatchPrintCN.Tests" />
+  </ItemGroup>
 </Project>

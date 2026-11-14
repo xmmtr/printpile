@@ -38,13 +38,18 @@ namespace BatchPrintCN
         public SettingsPage()
         {
             InitializeComponent();
-            InitPrinterBox();   // F15：打印机分组（同一数据源 + settings 键双向同步）
+            InitPrinterBox();   // F15：打印机分组（同一数据源 + settings 键双向同步；订阅只在这一次挂上）
+            SettingsService.LastPrinterChanged += OnLastPrinterChanged;   // 主页改 → 设置页跟随
+            Unloaded += (s, e) => SettingsService.LastPrinterChanged -= OnLastPrinterChanged;   // 静态事件须退订，防页面被常驻引用
             LangBox.SelectedIndex = SettingsService.Language == AppLanguage.EnUS ? 1 : 0;
             // 52 号令·步骤 4：外观下拉 → 主题色卡（ThemeCardHost 代码生成；ThemeBox 已随外观卡退役）
             BuildThemeCards();
             CloseBox.SelectedIndex = CloseIndexOf(SettingsService.CloseBehavior);   // V4.9-1：关闭行为三选
             ReportEnableBox.IsChecked = SettingsService.PrintReport;
             AutoStartBox.IsChecked = SettingsService.AutoStart;   // 80 号令（V1.2.1）：开机自启动（缺键＝关；_loading 挡着，回填不触发写注册表）
+            // v1.2.2 功能（2026-11-13 老板需求）：虚拟打印机保存位置回显（默认文件夹＋打印前询问开关）
+            PrintoutDirBox.Text = SettingsService.PrintoutDirectory;
+            PrintoutAskBox.IsChecked = SettingsService.AskPrintoutEveryTime;
             _loading = false;
         }
 
@@ -198,7 +203,9 @@ namespace BatchPrintCN
 
         // ===== F15（V4.3）：打印机分组 =====
 
-        /// <summary>填充打印机下拉（与主页 LoadPrinters 同一数据源：系统已安装打印机），并回显最近选择。</summary>
+        /// <summary>填充打印机下拉（与主页 LoadPrinters 同一数据源：系统已安装打印机），并回显最近选择。
+        /// v1.2.2 修（审计 P1）：LastPrinterChanged 订阅原写在本方法尾部，而 OnLastPrinterChanged 兜底又会调本方法——
+        /// 打印机消失一次就重复挂一个处理器（静态事件，越攒越多）。订阅挪到构造器只挂一次，本方法纯填表。</summary>
         private void InitPrinterBox()
         {
             _printerSyncing = true;
@@ -213,7 +220,6 @@ namespace BatchPrintCN
                 if (PrinterBox2.SelectedItem is string cur) SettingsService.SetLastPrinter(cur);   // 回写一次保持两处一致
             }
             finally { _printerSyncing = false; }
-            SettingsService.LastPrinterChanged += OnLastPrinterChanged;   // 主页改 → 设置页跟随
         }
 
         private void OnPrinterChanged(object sender, SelectionChangedEventArgs e)
@@ -277,6 +283,40 @@ namespace BatchPrintCN
         {
             if (_loading) return;
             SettingsService.SetPrintReport(ReportEnableBox.IsChecked == true);
+        }
+
+        // ===== v1.2.2 功能（2026-11-13 老板需求）：虚拟打印机保存位置 =====
+
+        /// <summary>浏览…：OpenFolderDialog 选目录 → 写回设置＋刷新文本框。</summary>
+        private void OnBrowsePrintout(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.OpenFolderDialog { Title = L("s.SaveLocTitle"), Multiselect = false };
+                string cur = (SettingsService.PrintoutDirectory ?? "").Trim();
+                if (cur.Length > 0 && System.IO.Directory.Exists(cur)) dlg.InitialDirectory = cur;
+                // SettingsPage 是 UserControl：owner 取所属窗口（自检无宿主窗口时退回无 owner 调用）
+                var host = Window.GetWindow(this);
+                bool? picked = host != null ? dlg.ShowDialog(host) : dlg.ShowDialog();
+                if (picked != true || string.IsNullOrWhiteSpace(dlg.FolderName)) return;
+                SettingsService.SetPrintoutDirectory(dlg.FolderName);
+                PrintoutDirBox.Text = SettingsService.PrintoutDirectory;
+            }
+            catch { }
+        }
+
+        /// <summary>手输/粘贴路径失焦即落盘（空＝恢复默认便携目录）。</summary>
+        private void OnPrintoutDirChanged(object sender, RoutedEventArgs e)
+        {
+            if (_loading || PrintoutDirBox == null) return;
+            SettingsService.SetPrintoutDirectory(PrintoutDirBox.Text);
+            PrintoutDirBox.Text = SettingsService.PrintoutDirectory;   // 归一化回显（空值回默认）
+        }
+
+        private void OnPrintoutAskChanged(object sender, RoutedEventArgs e)
+        {
+            if (_loading || PrintoutAskBox == null) return;
+            SettingsService.SetAskPrintoutEveryTime(PrintoutAskBox.IsChecked == true);
         }
 
         /// <summary>

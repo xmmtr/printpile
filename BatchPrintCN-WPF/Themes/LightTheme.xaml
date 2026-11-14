@@ -46,6 +46,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     <SolidColorBrush x:Key="BorderBrush" Color="#E5E5E5"/>
     <SolidColorBrush x:Key="BorderStrongBrush" Color="#D1D1D1"/>
+    <!-- v1.2.2 修（2026-11-14 实机反馈 2 号）：主列表份数/页码范围输入框的可见边框色。
+         不喂 border 令牌（深色 border=#3D3D3D 压在 #272727 行底上太弱，老板要求"浅深两套主题都要可辨"），
+         按 GridLineBrush 先例两套基座字典各定一值：浅色同 BorderStrongBrush=#D1D1D1（白行底上清晰），
+         深色提亮到 #5A5A5A（#272727 行底上 Δ≈51，一眼可辨）。两侧键名必须成对（GridRowBgBrush 教训）。 -->
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#D1D1D1"/>
+    <!-- v1.2.2 功能（2026-11-14 老板拍板方案 G「极光渐变描边」）：份数/页码范围输入框边框改为对角渐变刷＋聚焦换主题渐变＋光晕。
+         常态＝低饱和灰渐变（#C7CBD2→#DADDE2，白行底上清晰且不抢戏）；聚焦＝#3B82F6→#06B6D4 极光渐变＋同色 DropShadow 光晕；
+         键名三枚两侧字典一一成对（GridRowBgBrush 教训），BorderBrush 直收 Brush 资源、Effect 资源照 DynamicResource 取。 -->
+    <LinearGradientBrush x:Key="InputBorderGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#C7CBD2" Offset="0"/>
+        <GradientStop Color="#DADDE2" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="InputFocusGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#3B82F6" Offset="0"/>
+        <GradientStop Color="#06B6D4" Offset="1"/>
+    </LinearGradientBrush>
+    <DropShadowEffect x:Key="InputFocusGlow" BlurRadius="9" ShadowDepth="0" Color="#3B82F6" Opacity="0.4"/>
 
     <SolidColorBrush x:Key="DangerBrush" Color="#C42B1C"/>
     <SolidColorBrush x:Key="DangerBorderBrush" Color="#E76E63"/>

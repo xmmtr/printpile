@@ -31,9 +31,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   <!-- M2 依赖精简：不再开 UseWindowsForms（打印通道只需 System.Drawing.Common，约 1.5MB），
        发布目录因此不再拖 System.Windows.Forms*.dll（v4.2 实测 22MB 量级）。 -->
   <!-- 自检断言（BatchPrintCN-WPF 工程内的 V*Tests）要直取 Core 的内部接缝（若干纯函数与探针口子是 internal），
-       故向主程序集开 internal 可见性。73 号令起这里不再涉及任何验签/码编解码接缝（那套已整体删除）。 -->
+       故向主程序集开 internal 可见性。73 号令起这里不再涉及任何验签/码编解码接缝（那套已整体删除）。
+       v1.2.2 修（2026-11-08 拍板）：xUnit 测试工程（BatchPrintCN.Tests）同样要直取纯函数内部接缝
+       （如 PdfPrintEngine.ComputeGrid 白名单矩阵用例），一并开 internal 可见性。 -->
   <ItemGroup>
     <InternalsVisibleTo Include="PrintPile" />
+    <InternalsVisibleTo Include="BatchPrintCN.Tests" />
   </ItemGroup>
 
   <ItemGroup>

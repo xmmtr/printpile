@@ -373,9 +373,12 @@ namespace BatchPrintCN
         /// 52 号令·返修③：先读「自动打包日志」勾选态（settings FeedbackAutoLogs）——勾选时打包直传日志包、
         /// URL 带 logpkg；失败降级旧行为（跳转＋复制日志路径），三种结果各说各话不谎报。
         /// </summary>
-        private void OnFeedback(object sender, RoutedEventArgs e)
+        // v1.2.2 修（2026-11-08 拍板）：改 async 事件处理器＋await——勾选"自动打包日志"时日志包上传
+        // 原来经 FeedbackSite 的 GetAwaiter().GetResult() 把 UI 线程同步堵死；现在等上传期间界面照常响应
+        //（照本页 OnCheckUpdate/CheckNowAsync 的既有 async 用法；结果呈现仍走同一段 ShowFeedbackJump）。
+        private async void OnFeedback(object sender, RoutedEventArgs e)
         {
-            ShowFeedbackJump(FeedbackSite.Open(CbkAutoLogs == null || CbkAutoLogs.IsChecked == true));
+            ShowFeedbackJump(await FeedbackSite.OpenAsync(CbkAutoLogs == null || CbkAutoLogs.IsChecked == true));
         }
 
         private void OnAutoLogsChanged(object sender, RoutedEventArgs e)

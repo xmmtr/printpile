@@ -247,6 +247,28 @@ CREATE INDEX IF NOT EXISTS idx_history_printer ON print_history(printer);";
             }
             /// <summary>UI 显示用：旧记录（folder 为空）显示 "—"。</summary>
             public string FolderText { get { return string.IsNullOrEmpty(Folder) ? "—" : Folder; } }
+            /// <summary>
+            /// v1.2.2 修（2026-11-14 实机反馈 5 号）：文件名列悬浮气泡的多行详情（文件名／所在文件夹完整路径／
+            /// 打印机／时间）。老板反馈"文件名气泡只有文件名没有详情"——列内只放得下文件名，详情整包塞进气泡；
+            /// Folder/Printer 为空的旧记录该行显 "—"；时间与历史页时间列同格式 yyyy-MM-dd HH:mm。
+            /// 配套样式 CellTextTipFull（Styles.xaml，BasedOn CellTextTip）绑定本属性。
+            /// </summary>
+            public string NameTip
+            {
+                get
+                {
+                    return (Name ?? "") + "\n"
+                         + (string.IsNullOrEmpty(Folder) ? "—" : Folder) + "\n"
+                         + (string.IsNullOrEmpty(Printer) ? "—" : Printer) + "\n"
+                         + Time.ToString("yyyy-MM-dd HH:mm");
+                }
+            }
+            /// <summary>
+            /// v1.2.2 修（2026-11-14 实机反馈 5 号）：所在文件夹列的气泡内容＝完整路径（列内显示仍走 FolderText 的
+            /// "—" 兜底，不动）。空值返回空串，配套样式 CellTextTipFolder 按基样式同款空文本口径置空 ToolTip
+            /// （悬空不出空框）。
+            /// </summary>
+            public string FolderTip { get { return Folder ?? ""; } }
         }
 
         public static List<HistoryRow> QueryHistory(string printerFilter = null, string range = "all", int limit = 500)

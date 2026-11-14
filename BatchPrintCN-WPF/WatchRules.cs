@@ -299,6 +299,12 @@ namespace BatchPrintCN
         /// <summary>自检注入点：非 null 时代替 <see cref="AppPaths"/> 给出的正式路径（规则往返断言写在临时目录，不碰用户数据）。</summary>
         internal static Func<string> PathOverride = null;
 
+        // v1.2.2 修（2026-11-08 拍板）：读缓存——监视页状态列一秒一拍，每拍重读一遍 watch-rules.json 太浪费。
+        // 只服务 LoadCached；CachePath 记着缓存是按哪条路径读的（自检换 PathOverride 时旧缓存自动作废），
+        // Save 成功即失效（仅 CRUD 后失效的口径）。给调用方的是浅拷贝：列表可以随便 Add/Remove，规则对象共用。
+        private static List<WatchRule> _cache;
+        private static string _cachePath;
+
         private sealed class File0 { public int Version { get; set; } public List<WatchRule> Rules { get; set; } }
 
         internal static string Path0
@@ -332,6 +338,26 @@ namespace BatchPrintCN
             }
         }
 
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：带缓存的读——只给"反复读"的热路径（监视页一秒一拍的状态列）用；
+        /// 缓存仅 CRUD（Save 成功）后失效，换 PathOverride（自检换临时文件）也按路径自动作废。
+        /// 返回列表的浅拷贝（调用方按既有习惯增删不伤缓存）；规则对象与缓存共用同一批实例，
+        /// 与 Load 每次反序列化出新对象的差异只影响对象身份，字段值同源。
+        /// </summary>
+        internal static List<WatchRule> LoadCached()
+        {
+            lock (Sync)
+            {
+                string p = Path0;
+                if (_cache == null || !string.Equals(_cachePath, p, StringComparison.Ordinal))
+                {
+                    _cache = Load();
+                    _cachePath = p;
+                }
+                return new List<WatchRule>(_cache);
+            }
+        }
+
         internal static bool Save(List<WatchRule> rules)
         {
             lock (Sync)
@@ -344,6 +370,7 @@ namespace BatchPrintCN
                     string tmp = p + ".tmp";
                     File.WriteAllText(tmp, JsonSerializer.Serialize(dto, new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
                     if (File.Exists(p)) File.Replace(tmp, p, null); else File.Move(tmp, p);
+                    _cache = null; _cachePath = null;   // v1.2.2 修：CRUD 落盘后缓存失效
                     return true;
                 }
                 catch (Exception ex)

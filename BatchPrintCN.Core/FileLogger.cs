@@ -31,7 +31,9 @@ namespace BatchPrintCN
     public static class FileLogger
     {
         private static readonly object Sync = new object();
-        private static ILogger _logger;
+        // v1.2.2 修（2026-11-08 拍板）：volatile——Logger 属性的双检锁外层在锁外读 _logger，
+        // 没有 volatile 时另一线程的写入对它不保证及时可见（实现细节字段，行为不变）。
+        private static volatile ILogger _logger;
 
         private static ILogger Logger
         {
@@ -71,6 +73,23 @@ namespace BatchPrintCN
         public static void Write(string line)
         {
             try { Logger.Information(line); }
+            catch { }
+        }
+
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：退出前冲刷并关闭文件日志（对这份自己 new 出来的 Serilog logger
+        /// 用其官方 CloseAndFlush 等价口径＝Dispose：落盘缓冲、释放 shared 写句柄），由 App.OnExit 调用。
+        /// 关闭后再有 Write 会按懒加载重建一个新 logger（退出尾部的日志不丢）；全程吞异常——
+        /// 退出路径的清理失败不能反过来砸掉正常退出。
+        /// </summary>
+        public static void Shutdown()
+        {
+            try
+            {
+                ILogger l;
+                lock (Sync) { l = _logger; _logger = null; }
+                if (l != null) (l as IDisposable)?.Dispose();
+            }
             catch { }
         }
 

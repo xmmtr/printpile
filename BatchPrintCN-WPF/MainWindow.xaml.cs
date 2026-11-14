@@ -67,7 +67,8 @@ namespace BatchPrintCN
         }
         private string _copies = "1";
 
-        /// <summary>修整7（V4.4）：页码范围列现在带灰字占位水印，值变化要能推给界面（用户边打字水印边收）。
+        /// <summary>修整7（V4.4）：值变化要能推给界面。v1.2.2 修（2026-11-14 实机反馈 2 号）：列内灰字占位水印已按
+        /// 老板实机反馈整列移除（空值语义仍是"全部页面"），但逐键推送不能省——页数列联动/气泡/悬停提示都吃它。
         /// V4.9 修整·修2：同一次属性变化里顺带刷新范围反馈三处（页数列/气泡/提示），逐键即时。</summary>
         public string RangeText
         {
@@ -292,6 +293,8 @@ namespace BatchPrintCN
             EngineDetector.Detect();   // F1：启动时探测本机 Office/WPS（COM 可用性）
             SqliteStore.EnsureDb();    // F2：确保本地库存在
             Grid.ItemsSource = _rows;
+            // v1.2.2 修（2026-11-14 实机反馈 3 号）：拖动主窗口/窗口失活时收掉已开的页码范围气泡（气泡不跟窗）。
+            InitRangeBubbleAutoClose();
             // 修整11/13：文件名列吃掉剩余宽度（排到 Loaded 优先级，等内层视口宽稳定后再算）
             // 修整18（五批）：行变化/尺寸变化统一走 RequestStarFill（同步一次 + 补排一拍），
             // 否则"刚导入一批文件"那一拍还没排版就按无滚动条的视口算宽 → 纵向滚动条随后吃掉 16 DIP 就顶出横向条。
@@ -615,7 +618,9 @@ namespace BatchPrintCN
             if (p == null) return;
             if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(new Action(() => OnPrintProgress(p))); return; }
 
-            RowVm row = _rows.FirstOrDefault(r => r.Name == p.FileName);
+            // v1.2.2 修（2026-11-08 拍板）：行匹配从"按文件名"升到"按完整路径"——同名不同目录的两个文件
+            // 原先会互相错挂状态；路径缺失（空/异常态）才退回按名匹配，行为与旧版一致。
+            RowVm row = MatchProgressRow(p);
             if (p.Stage == PrintStage.Started)
             {
                 _currentRow = row;
@@ -652,6 +657,19 @@ namespace BatchPrintCN
                 CloseFileSample();                          // 修整20：失败也消耗时间，同样进样本
             }
             UpdateProgressText();   // 修整20：计数/预估随结构化进度事件即时刷新（Started 那一拍也要动）
+        }
+
+        /// <summary>v1.2.2 修（2026-11-08 拍板）：进度事件 → 列表行。优先按源文件完整路径匹配（大小写不敏感，
+        /// 与 WatchEngine 等处的路径口径一致）；事件没带路径或按路径没命中（理论不发生，防御兜底）才退回旧的按名匹配。</summary>
+        private RowVm MatchProgressRow(PrintProgress p)
+        {
+            if (!string.IsNullOrEmpty(p.FilePath))
+            {
+                RowVm byPath = _rows.FirstOrDefault(r =>
+                    string.Equals(r.Job != null ? r.Job.FilePath : null, p.FilePath, StringComparison.OrdinalIgnoreCase));
+                if (byPath != null) return byPath;
+            }
+            return _rows.FirstOrDefault(r => r.Name == p.FileName);
         }
 
         /// <summary>

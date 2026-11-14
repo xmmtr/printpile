@@ -30,6 +30,9 @@ namespace BatchPrintCN
     {
         public PrintStage Stage;
         public string FileName;     // 与 UI 行显示名一致（DisplayName 优先）
+        // v1.2.2 修（2026-11-08 拍板）：补源文件完整路径——UI 行匹配从"按文件名"升到"按路径"，
+        // 同名不同目录的文件不再互相错挂状态（纯数据字段，序列化/日志都不用它）。
+        public string FilePath;     // 源文件完整路径（UI 行按它精确匹配；空＝老事件形态，调用方退回按名匹配）
         public string Engine;       // 实际引擎（com / minipdf / com(自动) …；非 Office 文件为 "-"）
         public string Reason;       // 失败原因（仅 Failed 有值）
         public int Copies;

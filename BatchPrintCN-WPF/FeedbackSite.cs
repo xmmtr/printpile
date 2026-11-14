@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace BatchPrintCN
@@ -61,8 +62,24 @@ namespace BatchPrintCN
             return Open(SettingsService.FeedbackAutoLogs);
         }
 
-        /// <summary>带勾选态的跳转（真机走 settings；自检显式传，便于两分支都断）。</summary>
+        /// <summary>
+        /// 带勾选态的跳转（真机走 settings；自检显式传，便于两分支都断）。
+        /// v1.2.2 修（2026-11-08 拍板）：真机 UI 不再走本同步版——勾选自动打包时上传改走 <see cref="OpenAsync"/>
+        /// 的 await（原来 GetAwaiter().GetResult() 把 UI 线程同步堵死）；本同步版只剩自检注入桩在用
+        /// （UploadOverride 命中时任务同步完成，不会真阻塞）。
+        /// </summary>
         public static Jump Open(bool autoLogs)
+        {
+            return OpenAsync(autoLogs).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// 异步版跳转：流程与返回的 <see cref="Jump"/> 与同步版逐字段一致——
+        /// 先复制日志目录到剪贴板（失败不影响开网页），勾选时打包直传日志包（await 等待，不占死调用线程），
+        /// 最后用系统默认浏览器打开官网反馈页。故意不用 ConfigureAwait(false)：
+        /// 浏览器启动与剪贴板都要 UI 上下文，await 后回到原处继续（与 AboutPage 的 async 事件处理器配套）。
+        /// </summary>
+        public static async Task<Jump> OpenAsync(bool autoLogs)
         {
             var j = new Jump { Url = Url(), LogDirectory = SafeLogDir() };
             if (!string.IsNullOrEmpty(j.LogDirectory))
@@ -77,7 +94,7 @@ namespace BatchPrintCN
                 }
             }
 
-            // 52 号令·返修③：自动打包日志（同步等结果——URL 要带上 key 才有意义；10MB 内通常秒级）。
+            // 52 号令·返修③：自动打包日志（URL 要带上 key 才有意义；10MB 内通常秒级）。
             if (autoLogs)
             {
                 j.AutoLogAttempted = true;
@@ -91,7 +108,8 @@ namespace BatchPrintCN
                     }
                     else
                     {
-                        string key = LogPackager.UploadAsync(pkg.Zip, AppVersion.Full).GetAwaiter().GetResult();
+                        // v1.2.2 修（2026-11-08 拍板）：原 GetAwaiter().GetResult() 同步阻塞改 await。
+                        string key = await LogPackager.UploadAsync(pkg.Zip, AppVersion.Full);
                         if (!string.IsNullOrWhiteSpace(key))
                         {
                             j.LogPackageKey = key;

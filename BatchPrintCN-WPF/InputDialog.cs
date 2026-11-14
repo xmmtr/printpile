@@ -49,6 +49,7 @@ namespace BatchPrintCN
             Grid.SetRow(root.Children[root.Children.Count - 1], 0);
 
             _box = new TextBox { Text = defaultValue, Margin = new Thickness(0, 0, 0, 14) };
+            _box.Style = (Style)app.TryFindResource("InputGlowBox");   // v1.2.2（2026-11-14 拍板）：输入框统一方案 G 极光样式
             Grid.SetRow(_box, 1);
             root.Children.Add(_box);
 

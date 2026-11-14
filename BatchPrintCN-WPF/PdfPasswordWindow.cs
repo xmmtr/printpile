@@ -58,6 +58,7 @@ namespace BatchPrintCN
             grid.Children.Add(tip);
 
             _box = new PasswordBox { Margin = new Thickness(0, 0, 0, 14) };
+            _box.Style = (Style)app.TryFindResource("InputGlowPassword");   // v1.2.2（2026-11-14 拍板）：密码框统一方案 G 极光样式
             Grid.SetRow(_box, 1);
             grid.Children.Add(_box);
 

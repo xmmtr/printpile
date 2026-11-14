@@ -65,13 +65,16 @@ namespace BatchPrintCN
         private static readonly TimeSpan TimeoutSpan = TimeSpan.FromSeconds(TimeoutSeconds);
 
 
-        /// <summary>清单里客户端要用的四个字段（active 单独留作筛选依据）。</summary>
+        /// <summary>清单里客户端要用的五个字段（active 单独留作筛选依据）。</summary>
         public sealed class Entry
         {
             public string Version;
             public string Date;
             public string Url;
             public string Notes;
+            /// <summary>v1.2.2 修（2026-11-08 拍板）：安装包 SHA-256（64 位十六进制，可选）。缺省 null/空＝下载后不校验、
+            /// 行为照旧（向前兼容：服务端 manifest 契约待同步加 sha256 字段，旧清单里的包不能因客户端先升级就被拒装）。</summary>
+            public string Sha256;
             public bool Active;
         }
 
@@ -157,7 +160,10 @@ namespace BatchPrintCN
                             Version = Str(it, "version"),
                             Date = Str(it, "date"),
                             Url = Str(it, "url"),
-                            Notes = Str(it, "notes")
+                            Notes = Str(it, "notes"),
+                            // v1.2.2 修（2026-11-08 拍板）：可选字段 sha256（64 位十六进制，缺省 null）。
+                            // 写法不合法（长度不够/非十六进制）不在解析层静默洗成 null——留给下载后的校验按"不匹配"拒装（宁可拒装不放过坏包）。
+                            Sha256 = Str(it, "sha256")
                         };
                         JsonElement act;
                         if (it.TryGetProperty("active", out act))

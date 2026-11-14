@@ -4,7 +4,7 @@
 
 **PrintPile 以 [GNU GPLv3](LICENSE) 发布，全部功能免费开放，无任何数量限制。**
 
-当前版本：主线 **1.2.1**（Windows 10/11）｜Win7 精简版 **1.3.0**
+当前版本：主线 **1.2.2**（Windows 10/11）｜Win7 精简版 **1.3.1**
 
 ## 功能亮点（全部免费、无限量）
 
@@ -34,11 +34,12 @@
 
 | 版本 | 适用系统 | 直接下载（Release 附件） |
 | --- | --- | --- |
-| 1.2.1 安装版 | Windows 10 / 11 x64 | [PrintPile-Setup-v1.2.1.exe](https://github.com/xmmtr/printpile/releases/download/v1.2.1/PrintPile-Setup-v1.2.1.exe) |
-| 1.2.1 便携版 | Windows 10 / 11 x64 | [PrintPile-v1.2.1-portable.zip](https://github.com/xmmtr/printpile/releases/download/v1.2.1/PrintPile-v1.2.1-portable.zip) |
-| 1.3.0 安装版 | Windows 7 SP1 x64 | [PrintPile-v1.3.0-win7-Setup.exe](https://github.com/xmmtr/printpile/releases/download/v1.3.0-win7/PrintPile-v1.3.0-win7-Setup.exe) |
-| 1.3.0 便携版 | Windows 7 SP1 x64 | [PrintPile-v1.3.0-win7.zip](https://github.com/xmmtr/printpile/releases/download/v1.3.0-win7/PrintPile-v1.3.0-win7.zip) |
-| 1.3.0 源码包 | 构建/审计用 | [PrintPile-Lite-v1.3.0-src.zip](https://github.com/xmmtr/printpile/releases/download/v1.3.0-win7/PrintPile-Lite-v1.3.0-src.zip) |
+| 1.2.2 安装版 | Windows 10 / 11 x64 | [PrintPile-Setup-v1.2.2.exe](https://github.com/xmmtr/printpile/releases/download/v1.2.2/PrintPile-Setup-v1.2.2.exe) |
+| 1.2.2 便携版 | Windows 10 / 11 x64 | [PrintPile-v1.2.2-portable.zip](https://github.com/xmmtr/printpile/releases/download/v1.2.2/PrintPile-v1.2.2-portable.zip) |
+| 1.2.2 源码包 | 构建/审计用 | [PrintPile-v1.2.2-src.zip](https://github.com/xmmtr/printpile/releases/download/v1.2.2/PrintPile-v1.2.2-src.zip) |
+| 1.3.1 安装版 | Windows 7 SP1 x64 | [PrintPile-v1.3.1-win7-Setup.exe](https://github.com/xmmtr/printpile/releases/download/v1.3.1-win7/PrintPile-v1.3.1-win7-Setup.exe) |
+| 1.3.1 便携版 | Windows 7 SP1 x64 | [PrintPile-v1.3.1-win7.zip](https://github.com/xmmtr/printpile/releases/download/v1.3.1-win7/PrintPile-v1.3.1-win7.zip) |
+| 1.3.1 源码包 | 构建/审计用 | [PrintPile-v1.3.1-win7-src.zip](https://github.com/xmmtr/printpile/releases/download/v1.3.1-win7/PrintPile-v1.3.1-win7-src.zip) |
 
 > 所有附件均附 SHA256SUMS.txt 校验清单；大陆网络可改用 Gitee 镜像同名 Release：`https://gitee.com/xmmtr/printpile/releases`（附件与 GitHub 同源同哈希）。
 
@@ -89,7 +90,7 @@ LICENSE                       # GNU GPLv3 全文
 在列表里双击文件打开预览，超界区域会标红纹；回到打印设置调整缩放（如“适合页面”）后再打。
 
 **Win7 能用吗？**
-可以。使用 Win7 精简版 1.3.0，安装包免 UAC，无需 VC++ 运行库或系统补丁；另有便携 zip。
+可以。使用 Win7 精简版 1.3.1，安装包免 UAC，无需 VC++ 运行库或系统补丁；另有便携 zip。
 
 **会上传我的文件吗？**
 不会。打印与转换都在本机完成；仅在检查更新或你主动提交反馈时联网。

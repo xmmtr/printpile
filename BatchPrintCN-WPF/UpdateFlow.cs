@@ -18,6 +18,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -75,8 +77,11 @@ namespace BatchPrintCN
     }
 
     /// <summary>
-    /// 66 号令 T2：更新包下载器。**只下到 %TEMP%**（不落用户目录、不需要新设置键），文件名固定
-    /// `PrintPile-update-&lt;版本&gt;.&lt;exe|zip&gt;`；版本串先做白字符净化再拼路径——清单被篡改写成 `..\..\x` 也越不出去。
+    /// 66 号令 T2：更新包下载器。**只下到 %TEMP%**（不落用户目录、不需要新设置键），文件名
+    /// `PrintPile-update-&lt;版本&gt;-&lt;进程号-随机串&gt;.&lt;exe|zip&gt;`；版本串先做白字符净化再拼路径——清单被篡改写成 `..\..\x` 也越不出去。
+    /// v1.2.2 修（2026-11-08 拍板）：临时名在版本后追加"进程号＋每进程一次性随机串"——两个副本同时下载
+    /// 不再互踩同一个固定名；后缀按进程固定（不是每次调用随机），因为取消清理、TempExists 都靠再次调用
+    /// <see cref="TempPathFor"/> 拿回**同一条**路径，每次随机就会"下到 A、删 B"。
     /// 三条铁律：①下载前再过一次 <see cref="UpdateChecker.IsAllowedUrl"/>（点按钮那一刻清单可能已被换掉，48 号修 2 口径）；
     /// ②超时 8 分钟（大文件，与清单检查的 8 秒是两个量级）；③取消或失败**必删半截文件**，绝不留给用户一个"看着能装"的残包。
     /// 自检走 <see cref="FetchOverride"/> 注入假流：不打真网络，进度回调与字节数都能逐数核对。
@@ -85,6 +90,8 @@ namespace BatchPrintCN
     {
         /// <summary>下载超时（秒）：8 分钟。</summary>
         public const int TimeoutSeconds = 8 * 60;
+
+        private static string _tempTag;   // v1.2.2 修：本进程的临时名后缀（进程号＋随机 8 位），首次取用时生成、进程内不变
 
         /// <summary>进度快照（Total 未知时为 -1，界面按"已下载 X／大小未知"显示）。</summary>
         public sealed class Progress
@@ -131,12 +138,18 @@ namespace BatchPrintCN
             return string.IsNullOrEmpty(s) ? "unknown" : s;
         }
 
-        /// <summary>临时文件完整路径（扩展名按 URL 尾巴判：.zip→zip，其余一律 exe）。</summary>
+        /// <summary>临时文件完整路径（扩展名按 URL 尾巴判：.zip→zip，其余一律 exe）。
+        /// v1.2.2 修（2026-11-08 拍板）：版本后带"进程号-随机串"后缀防双副本互踩；同进程内多次调用返回同一路径，
+        /// 取消清理/TempExists 与下载路径保持同步（后缀若每次随机，就会出现下到 A、删到 B）。</summary>
         public static string TempPathFor(UpdateChecker.Entry e)
         {
             string url = e == null ? null : e.Url;
             bool isZip = !string.IsNullOrEmpty(url) && url.Split('?')[0].EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
-            return Path.Combine(Path.GetTempPath(), "PrintPile-update-" + SafeVersion(e == null ? null : e.Version) + (isZip ? ".zip" : ".exe"));
+            if (_tempTag == null)
+                _tempTag = Process.GetCurrentProcess().Id.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            return Path.Combine(Path.GetTempPath(),
+                "PrintPile-update-" + SafeVersion(e == null ? null : e.Version) + "-" + _tempTag + (isZip ? ".zip" : ".exe"));
         }
 
         /// <summary>字节数成人话（弹窗那行"已下载 X／Y"用）。</summary>
@@ -167,7 +180,13 @@ namespace BatchPrintCN
                 try
                 {
                     var o = await fake(e.Url, progress, ct).ConfigureAwait(false);
-                    if (o != null && o.Ok) o.Path = path;
+                    if (o != null && o.Ok)
+                    {
+                        // v1.2.2 修（2026-11-08 拍板）：自检假流与真机同一校验口径——条目带 sha256 时下载完成后必须过校验
+                        string bad = VerifyAfterDownload(e, path);
+                        if (bad != null) { TryDelete(path); return Outcome.Failed(UpdateChecker.FailKind.Network, bad); }
+                        o.Path = path;
+                    }
                     if (o != null && !o.Ok && !o.Cancelled) o.Path = null;
                     return o ?? Outcome.Failed(UpdateChecker.FailKind.Network, "no-result");
                 }
@@ -198,6 +217,10 @@ namespace BatchPrintCN
                     }
                     Report(progress, received, total <= 0 ? received : total, path);
                     FileLogger.Write("更新包下载完成：" + path + "（" + SizeText(received) + "）");
+                    // v1.2.2 修（2026-11-08 拍板）：下载完成后按条目 sha256 校验完整性；
+                    // 不匹配/读不了 → 删掉半截临时文件、按既有「下载失败可重试」分支返回（UpdateDialog 的 Failed 段），不另起文案。
+                    string bad = VerifyAfterDownload(e, path);
+                    if (bad != null) { TryDelete(path); return Outcome.Failed(UpdateChecker.FailKind.Network, bad); }
                     return Outcome.Success(path);
                 }
             }
@@ -220,6 +243,49 @@ namespace BatchPrintCN
         {
             try { if (!string.IsNullOrEmpty(path) && File.Exists(path)) File.Delete(path); }
             catch (Exception ex) { FileLogger.Write("更新下载：临时文件没删掉（" + path + "）：" + ex.Message); }
+        }
+
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：下载完成后的完整性闸门——条目 sha256 非空才校验；null/空＝不校验照旧
+        /// （向前兼容：服务端 manifest 契约待同步加 sha256 字段，旧清单里的包不能因客户端先升级就被拒装）。
+        /// 返回 null＝通过（或无需校验）；否则返回失败原因串（与既有失败口径一致：只进日志不上界面）。
+        /// </summary>
+        private static string VerifyAfterDownload(UpdateChecker.Entry e, string path)
+        {
+            if (e == null || string.IsNullOrWhiteSpace(e.Sha256)) return null;
+            bool ok = VerifySha256(path, e.Sha256);
+            FileLogger.Write(ok ? "更新包 sha256 校验通过：" + path
+                                : "更新包 sha256 校验不通过（期望 " + e.Sha256.Trim() + "）：" + path);
+            return ok ? null : "sha256-mismatch";
+        }
+
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：算文件 SHA-256 与清单期望值比较（大小写不敏感）。
+        /// 文件不存在/读不了/期望值不是 64 位十六进制一律 false——宁可拒装，不放过被篡改或残缺的包。
+        /// 抽成近纯函数（只读文件系统、异常只落日志）供单测逐例核对。
+        /// </summary>
+        internal static bool VerifySha256(string file, string expected)
+        {
+            if (string.IsNullOrWhiteSpace(file) || string.IsNullOrWhiteSpace(expected)) return false;
+            string want = expected.Trim();
+            if (want.Length != 64) return false;
+            foreach (char c in want) { if (!Uri.IsHexDigit(c)) return false; }
+            try
+            {
+                using (var sha = SHA256.Create())
+                using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    byte[] hash = sha.ComputeHash(fs);
+                    var sb = new StringBuilder(hash.Length * 2);
+                    foreach (byte b in hash) sb.Append(b.ToString("x2"));
+                    return string.Equals(sb.ToString(), want, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Write("更新包 sha256 校验异常（按不通过处理）：" + ex.Message);
+                return false;
+            }
         }
 
         /// <summary>自检取用：取消/失败后确认临时文件确实不在了。</summary>

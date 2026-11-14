@@ -123,12 +123,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
-    <!-- 修整10：文件名列悬浮 1 秒后在单元格右下角显示全名（ToolTip 内容 = 绑定值本身，截断与否都提示）。
+    <!-- v1.2.2 修（2026-11-14 实机反馈 2 号）：主列表单元格内容水平居中。基样式 CellText（左对齐）历史页也在用
+         （修整21b 数字列口径），不能就地加 Center——这里派生一份只给主列表「类型」列用；
+         文件名称列按老板原话保持左对齐不动。页数/状态列各自的派生样式（CellTextPages/CellTextStatus）
+         只有主列表在用，直接就地加 HorizontalAlignment=Center。 -->
+    <Style x:Key="CellTextCenter" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+    </Style>
+    <!-- 修整10：文件名列悬浮后在单元格右下角显示全名（ToolTip 内容 = 绑定值本身，截断与否都提示）。
          WPF 的 PlacementMode 没有 BottomRight（那是 WinForms 的枚举），故用 Right + 下压偏移把提示框固定压到
-         单元格右下角旁；位置对所有行一致，偏移值要微调只改这一处。 -->
+         单元格右下角旁；位置对所有行一致，偏移值要微调只改这一处。
+         v1.2.2 修（2026-11-14 实机反馈 5 号）：悬浮延迟 1 秒→0.4 秒——老板实机反馈"悬停看不到全文、1 秒才出太迟钝"。
+         主页文件名列与历史页 CellTextTip 本就同口径（修整21b 有逐项同值断言），两页必须一起改；
+         V44Tests 修整10 / NameCellTooltipRender / 修整21b 三处断言已同步修准 400（留痕见各处）。 -->
     <Style x:Key="CellTextName" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
         <Setter Property="ToolTip" Value="{Binding Name}"/>
-        <Setter Property="ToolTipService.InitialShowDelay" Value="1000"/>
+        <Setter Property="ToolTipService.InitialShowDelay" Value="400"/>
         <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
         <Setter Property="ToolTipService.Placement" Value="Right"/>
         <Setter Property="ToolTipService.VerticalOffset" Value="14"/>
@@ -137,10 +147,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <!-- ============ 修整21b（V4.4 五批）：会截断的单元格文本一律带悬浮提示（历史页五列共用） ============
          提示内容绑「自身 Text」而不是某个具体属性——一份样式管所有列（主页文件名那份 CellTextName 是二批定稿的
          逐列绑定，不动它）。TextTrimming 只影响绘制、Text 里仍是完整值，所以气泡里永远是全文；
-         空值不出气泡（否则悬空显一个空框）。延迟/落点与主页 CellTextName 严格同口径：1 秒、Right + 下压 14。 -->
+         空值不出气泡（否则悬空显一个空框）。延迟/落点与主页 CellTextName 严格同口径：Right + 下压 14。
+         v1.2.2 修（2026-11-14 实机反馈 5 号）：悬浮延迟 1 秒→0.4 秒（BetweenShowDelay 保持 0）——老板实机反馈
+         "悬停看不到全文，1 秒才出太迟钝"。历史页/监视页共用本样式自动提速，主页 CellTextName 同步改 400
+         保两页同口径（修整21b 的逐项比较断言已同步修准）；文件名/所在文件夹两列改挂下方两份派生样式。 -->
     <Style x:Key="CellTextTip" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
         <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-        <Setter Property="ToolTipService.InitialShowDelay" Value="1000"/>
+        <Setter Property="ToolTipService.InitialShowDelay" Value="400"/>
         <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
         <Setter Property="ToolTipService.Placement" Value="Right"/>
         <Setter Property="ToolTipService.VerticalOffset" Value="14"/>
@@ -148,6 +161,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
             <Trigger Property="Text" Value="">
                 <Setter Property="ToolTip" Value="{x:Null}"/>
             </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- v1.2.2 修（2026-11-14 实机反馈 5 号）：历史页文件名列详情气泡 + 所在文件夹列完整路径气泡。
+         文件名列（CellTextTipFull）：气泡不再只显文件名，改绑 HistoryRow.NameTip（多行＝文件名／所在文件夹
+         完整路径／打印机／时间，Folder 空的旧记录该行显 "—"），列内显示仍是文件名本身；延迟/落点/不折行全套
+         继承基样式，且 BasedOn 链让 V44Tests 修整21b 的"挂气泡五列"判定（StyleDerivesFrom）照认不缺列。
+         所在文件夹列（CellTextTipFolder）：列内仍显 FolderText（空值 "—" 兜底不动），气泡改绑完整路径
+         FolderTip；空值口径与基样式同款——FolderTip 为空串时置空 ToolTip，悬空不出一个空框。 -->
+    <Style x:Key="CellTextTipFull" TargetType="TextBlock" BasedOn="{StaticResource CellTextTip}">
+        <Setter Property="ToolTip" Value="{Binding NameTip}"/>
+    </Style>
+    <Style x:Key="CellTextTipFolder" TargetType="TextBlock" BasedOn="{StaticResource CellTextTip}">
+        <Setter Property="ToolTip" Value="{Binding FolderTip}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding FolderTip}" Value="">
+                <Setter Property="ToolTip" Value="{x:Null}"/>
+            </DataTrigger>
         </Style.Triggers>
     </Style>
 
@@ -159,6 +190,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
          打印中（Printing）按需求方口径＝正常文字色（浅色深字/深色白字，浅色下纯白不可读），故不进触发器。
          色键两主题各一份（浅色 AA 压暗档 / 深色提亮档），DynamicResource 让切主题即时生效（VM 不持 Brush）。 -->
     <Style x:Key="CellTextStatus" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+        <!-- v1.2.2 修（2026-11-14 实机反馈 2 号）：状态列单元格内容水平居中（列头本就居中）。本样式只有主列表在用，
+             就地加；V49RangeTests 修6 钉的样式身份（stTb.Style == CellTextStatus 资源）不受影响。 -->
+        <Setter Property="HorizontalAlignment" Value="Center"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding StatusKind}" Value="{x:Static local:RowStatusKind.Done}">
                 <Setter Property="Foreground" Value="{DynamicResource StatusOkTextBrush}"/>
@@ -200,7 +234,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                 <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
             </DataTrigger>
         </Style.Triggers>
-        <!-- 修5：页数格悬停显示与气泡同源的完整结论（"X/N 页"放不下全称，这里给得下） -->
+        <!-- 修5：页数格悬停显示与气泡同源的完整结论（"X/N 页"放不下全称，这里给得下）。
+             v1.2.2 修（2026-11-14 实机反馈 2 号）：页数列单元格内容水平居中（列头本就居中）；本样式只有主列表在用。
+             （Setter 与既有几枚同置尾部——XAML 属性元素不能夹在内容中间，MC3088 教训。） -->
+        <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="ToolTip" Value="{Binding RangeHint}"/>
         <Setter Property="ToolTipService.InitialShowDelay" Value="1000"/>
         <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
@@ -208,30 +245,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         <Setter Property="ToolTipService.VerticalOffset" Value="14"/>
     </Style>
 
-    <!-- ============ V4.9 版本内修整·修4：范围格无效输入标红 ============
-         零有效页码（含"总页数未知但写法解析不出页码"）→ 文字红；聚焦时再加一圈红框；
-         改回有效或清空即复原。认的是 RowVm.IsRangeInvalid（由 RangeState 派生的结构化布尔），不认文案。
-         BasedOn 库的隐式 TextBox 样式：四个 Setter 与修整前写在 RangeBox 标签上的四个属性逐一对应，
-         观感零变化（只有真的无效时才上色），换进样式的唯一目的是让触发器有地方挂。 -->
-    <Style x:Key="CellBoxRange" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding IsRangeInvalid}" Value="True">
-                <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
-            </DataTrigger>
-            <MultiDataTrigger>
-                <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding IsRangeInvalid}" Value="True"/>
-                    <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Self}}" Value="True"/>
-                </MultiDataTrigger.Conditions>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource StatusFailTextBrush}"/>
-            </MultiDataTrigger>
-        </Style.Triggers>
-    </Style>
+    <!-- v1.2.2 修（2026-11-14 实机反馈 2 号）：CellBoxRange（范围格输入框样式）整块下移到 CellBoxFill 之后——
+         它改为 BasedOn CellBoxFill 与份数列严格同口径（可见边框＋极简模板），StaticResource 要求基样式先声明。
+         修4 的触发器原样随迁（红字/聚焦红框，认结构化布尔 IsRangeInvalid），见下方新位置。 -->
 
     <!-- ============ V4.9 版本内修整·修3：聚焦气泡（浮层） ============
          铁律＝行高锁死，所以解析详情一律不进单元格，只走这一层 Popup 与修5 的 ToolTip。
@@ -281,9 +297,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
          它有自己的高度（≈32）且贴在格子下半部，浅深两主题的 3 倍特写里都能看到一条多余的圆角轮廓
          （见 份数格铺满特写-*.png 修前形态）。这里只换模板、不换字体：BasedOn 库的隐式样式保住字号字族，
          模板里只留「透明底 + PART_ContentHost（文本宿主，缺它不能输入）」，底色/边框一律走 TemplateBinding，
-         于是输入框真的等于整个格子，且底色天然随行底走主题（三批 GridRowBgBrush 教训：不写死任何白底）。 -->
+         于是输入框真的等于整个格子，且底色天然随行底走主题（三批 GridRowBgBrush 教训：不写死任何白底）。
+         v1.2.2 修（2026-11-14 实机反馈 2 号）：老板实机反馈"铺满列宽但无边框，看起来像纯文本"——
+         边框从 0 收紧为 1、色走主题键 InputBorderBrush（浅 #D1D1D1 / 深 #5A5A5A，两套基座都可辨）；
+         底色仍透明（修整17d"树内不画不透明底"断言继续成立），输入行为/绑定链路一字不动。
+         v1.2.2 功能（2026-11-14 老板拍板方案 G「极光渐变描边」）：边框刷升级为对角渐变（InputBorderGradient，
+         低饱和灰渐变常态）＋7px 圆角；聚焦触发器换 InputFocusGradient（蓝→青极光）＋InputFocusGlow 光晕
+         （DropShadowEffect 资源，浅深两套主题各配一值）。修整17d 透明底断言继续成立（Effect 只做外发光不画底）；
+         CellBoxRange 的"聚焦且无效转红"是派生样式触发器，优先级高于本基样式的聚焦触发器，红框语义不受影响。 -->
     <Style x:Key="CellBoxFill" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderGradient}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -291,7 +315,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7"
+                            SnapsToDevicePixels="True">
                         <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Padding="{TemplateBinding Padding}"
                                       HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
@@ -299,6 +324,95 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource InputFocusGradient}"/>
+                <Setter Property="Effect" Value="{DynamicResource InputFocusGlow}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ v1.2.2 功能（2026-11-14 老板拍板"统一样式"）：方案 G 极光输入框通用款 ============
+         老板拍板把方案 G 推广到**全应用所有输入框**（搜索框/设置路径框/各弹窗输入/监视规则五项/预览参数条）。
+         两份共享样式与 CellBoxFill 同一视觉（渐变描边＋7px 圆角＋聚焦极光换装＋光晕），资源取同一组
+         InputBorderGradient/InputFocusGradient/InputFocusGlow；与 CellBoxFill 保持独立拷贝（触发器断言
+         V44HasFocusGlowTrigger 只查实例自身 Style.Triggers，抽基类会破断言，刻意不复用）。
+         InputGlowPassword 给 PasswordBox（模板同为 Border＋PART_ContentHost，IsFocused 触发器同款）。
+         只读多行显示框（诊断窗口）不套——那是显示不是输入。 -->
+    <Style x:Key="InputGlowBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderGradient}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="6,3"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Padding="{TemplateBinding Padding}"
+                                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource InputFocusGradient}"/>
+                <Setter Property="Effect" Value="{DynamicResource InputFocusGlow}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="InputGlowPassword" TargetType="PasswordBox" BasedOn="{StaticResource {x:Type PasswordBox}}">
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderGradient}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="6,3"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="PasswordBox">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Padding="{TemplateBinding Padding}"
+                                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource InputFocusGradient}"/>
+                <Setter Property="Effect" Value="{DynamicResource InputFocusGlow}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ V4.9 版本内修整·修4：范围格无效输入标红（v1.2.2 下移至此，BasedOn CellBoxFill） ============
+         零有效页码（含"总页数未知但写法解析不出页码"）→ 文字红；无效且聚焦时边框转红；
+         改回有效或清空即复原。认的是 RowVm.IsRangeInvalid（由 RangeState 派生的结构化布尔），不认文案。
+         v1.2.2 修（2026-11-14 实机反馈 2 号）：基样式（CellBoxFill）边框从 0 收紧为 1（可见输入框），
+         所以"聚焦红框"的语义从"加一圈"变为"边框变色"；MultiDataTrigger 的 BorderThickness/BorderBrush
+         两个 Setter 原样保留——V49RangeTests 修4 的样式结构断言钉着这两个 Setter，一个都不能少。 -->
+    <Style x:Key="CellBoxRange" TargetType="TextBox" BasedOn="{StaticResource CellBoxFill}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsRangeInvalid}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource StatusFailTextBrush}"/>
+            </DataTrigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsRangeInvalid}" Value="True"/>
+                    <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Self}}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource StatusFailTextBrush}"/>
+            </MultiDataTrigger>
+        </Style.Triggers>
     </Style>
 
     <!-- ============ 修整14/15：列头（两页共用） ============

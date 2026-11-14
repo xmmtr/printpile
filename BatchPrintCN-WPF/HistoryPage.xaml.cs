@@ -23,7 +23,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Media;
+using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace BatchPrintCN
@@ -74,15 +77,105 @@ namespace BatchPrintCN
         /// <summary>自检取用：导出按钮本体（73 号令起本按钮不再有闸，常亮）。</summary>
         internal System.Windows.Controls.Button ExportButtonForTest { get { return BtnExport; } }
 
-        /// <summary>V4.5-2：语言切换 → 重画单元格（Items.Refresh 会重新读绑定值）+ 重出底部计数文案。</summary>
+        /// <summary>V4.5-2：语言切换 → 重画单元格（Items.Refresh 会重新读绑定值）+ 重出底部计数文案。
+        /// v1.2.2（审计 P1）：顺带重建筛选下拉文案并保序——否则筛选项停留旧语言直到重启。</summary>
         private void OnLanguageChangedForStatus()
         {
             try
             {
+                RebuildFilterLabels();
                 UpdateCountText();
                 Grid.Items.Refresh();
             }
             catch { }
+        }
+
+        /// <summary>v1.2.2：重建打印机/时间筛选下拉的本地化文案，选中索引保持不变（重入门挡 SelectionChanged 风暴）。</summary>
+        private void RebuildFilterLabels()
+        {
+            if (FilterPrinter == null || FilterRange == null) return;
+            _refreshing = true;
+            try
+            {
+                int p = FilterPrinter.SelectedIndex, r = FilterRange.SelectedIndex;
+                FilterPrinter.Items.Clear();
+                FilterPrinter.Items.Add(L("s.HistoryAllPrinter"));
+                foreach (string pr in SqliteStore.QueryPrinters()) FilterPrinter.Items.Add(pr);
+                FilterPrinter.SelectedIndex = (p >= 0 && p < FilterPrinter.Items.Count) ? p : 0;
+                FilterRange.Items.Clear();
+                FilterRange.Items.Add(L("s.HistoryRangeAll"));
+                FilterRange.Items.Add(L("s.HistoryRangeToday"));
+                FilterRange.Items.Add(L("s.HistoryRangeWeek"));
+                FilterRange.SelectedIndex = (r >= 0 && r < FilterRange.Items.Count) ? r : 0;
+            }
+            finally { _refreshing = false; }
+            Refresh();   // 新语言下重查并重出计数（Refresh 自带重入门与过期结果丢弃）
+        }
+
+        // ===== v1.2.2 功能（2026-11-14 老板需求）：双击「原文件所在路径」复制完整路径 =====
+
+        /// <summary>双击路径单元格 → 完整路径（HistoryRow.Folder，非显示用的"—"兜底文本）进剪贴板＋光标处气泡提示。
+        /// 其它列/空路径（旧记录显示"—"）不响应，不改选控行为。</summary>
+        private void OnGridDoubleClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var cell = FindAncestorCell(e.OriginalSource as DependencyObject);
+                if (cell == null || cell.Column != ColFolder) return;
+                var row = cell.DataContext as SqliteStore.HistoryRow;
+                if (row == null || string.IsNullOrWhiteSpace(row.Folder)) return;
+                Clipboard.SetText(row.Folder);
+                ShowCopyToast();
+            }
+            catch { /* 剪贴板被占用等异常静默（不打断浏览） */ }
+        }
+
+        private static DataGridCell FindAncestorCell(DependencyObject d)
+        {
+            while (d != null && !(d is DataGridCell)) d = VisualTreeHelper.GetParent(d);
+            return d as DataGridCell;
+        }
+
+        private Popup _copyToast;
+        private DispatcherTimer _copyToastTimer;
+
+        /// <summary>光标处的轻提示（1.6 秒自动收；IsHitTestVisible=false 不挡任何点击）。</summary>
+        private void ShowCopyToast()
+        {
+            CloseCopyToast();
+            var app = Application.Current;
+            var border = new Border
+            {
+                Background = app.TryFindResource("WindowBgBrush") as Brush ?? Brushes.White,
+                BorderBrush = app.TryFindResource("GridLineBrush") as Brush ?? Brushes.Gray,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(4),
+                Padding = new Thickness(10, 6, 10, 6),
+            };
+            border.Child = new TextBlock
+            {
+                Text = L("s.HistoryCopied"),
+                Foreground = app.TryFindResource("TextPrimaryBrush") as Brush ?? Brushes.Black,
+            };
+            _copyToast = new Popup
+            {
+                Placement = PlacementMode.MousePoint,
+                StaysOpen = true,
+                AllowsTransparency = true,
+                IsHitTestVisible = false,
+                PopupAnimation = PopupAnimation.Fade,
+                Child = border,
+            };
+            _copyToast.IsOpen = true;
+            _copyToastTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1600) };
+            _copyToastTimer.Tick += (s, ev) => CloseCopyToast();
+            _copyToastTimer.Start();
+        }
+
+        private void CloseCopyToast()
+        {
+            if (_copyToastTimer != null) { _copyToastTimer.Stop(); _copyToastTimer = null; }
+            if (_copyToast != null) { try { _copyToast.IsOpen = false; } catch { } _copyToast = null; }
         }
 
         private bool _starQueued;
@@ -197,11 +290,13 @@ namespace BatchPrintCN
 
                 EmptyText.Visibility = Visibility.Collapsed;
                 CountText.Text = L("s.HistoryLoading");
-                string printer = FilterPrinter.SelectedItem as string;
-                string range = FilterRange.SelectedItem as string;
-                string printerFilter = printer == L("s.HistoryAllPrinter") || string.IsNullOrEmpty(printer) ? null : printer;
-                string rangeKey = range == L("s.HistoryRangeToday") ? "today"
-                    : range == L("s.HistoryRangeWeek") ? "week" : "all";
+                // v1.2.2 修（审计 P1）：筛选下拉项只在构造期填充一次，旧逻辑拿"选中项文本"与**当前**资源键比对——
+                // 切语言后文本对不上，"全部打印机"哨兵项被当成真打印机名进 SQL，历史页查回 0 行（重启才恢复）。
+                // 改按选中索引判定（0=全部；与 ApplyPrinterColumnFilter 的索引语义一致），文本仅供显示。
+                int pi = FilterPrinter == null ? 0 : FilterPrinter.SelectedIndex;
+                string printerFilter = pi <= 0 ? null : FilterPrinter.SelectedItem as string;
+                int ri = FilterRange == null ? 0 : FilterRange.SelectedIndex;
+                string rangeKey = ri == 1 ? "today" : ri == 2 ? "week" : "all";
                 int limitN;
                 if (limit == HistoryLimit.TenDays) rangeKey = "tendays";
                 limitN = LimitRows(limit);   // 档位换算（73 号令起无封顶：无限制档就真是无限制）
@@ -396,11 +491,11 @@ namespace BatchPrintCN
             }
         }
 
-        /// <summary>V4.2：CSV 写出（UTF-8 带 BOM；列：文件名/所在文件夹/后缀/份数/页数/状态/时间/打印机/引擎）。</summary>
+        /// <summary>V4.2：CSV 写出（UTF-8 带 BOM；列：文件名/原文件所在路径/后缀/份数/页数/状态/时间/打印机/引擎）。</summary>
         private static void WriteCsv(string path, List<SqliteStore.HistoryRow> rows)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("文件名,所在文件夹,后缀,份数,页数,状态,时间,打印机,引擎");
+            sb.AppendLine("文件名,原文件所在路径,后缀,份数,页数,状态,时间,打印机,引擎");
             foreach (SqliteStore.HistoryRow r in rows)
             {
                 sb.AppendLine(string.Join(",",

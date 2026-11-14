@@ -93,9 +93,11 @@ namespace BatchPrintCN
             try { return PdfiumFile.Open(file); }
             catch (PdfPasswordRequiredException)
             {
-                if (_askPassword == null) throw new Exception("PDF 已加密，需要密码才能打印：" + Path.GetFileName(file));
+                // v1.2.2 修（2026-11-08 拍板）：泛型 Exception 分型——没处问密码＝引擎走不下去（PrintEngineException）、
+                // 用户在密码框点了取消＝主动取消（PrintCancelledException）；消息与上层 catch(Exception) 记账口径不变。
+                if (_askPassword == null) throw new PrintEngineException("PDF 已加密，需要密码才能打印：" + Path.GetFileName(file));
                 string pwd = _askPassword(file);
-                if (string.IsNullOrEmpty(pwd)) throw new Exception("已取消打印加密 PDF：" + Path.GetFileName(file));
+                if (string.IsNullOrEmpty(pwd)) throw new PrintCancelledException("已取消打印加密 PDF：" + Path.GetFileName(file));
                 return PdfiumFile.Open(file, pwd);
             }
         }
@@ -140,13 +142,18 @@ namespace BatchPrintCN
                 totalPages = total;
                 // F6（V4.3）：页序统一走 PrintPlan——页码范围 → 小册子骑马订重排（优先，含 -1 空白补位）→ 奇偶页过滤
                 int[] pages = PrintPlan.PageSequence(total, job.RangeText, job.PageIndexes, E);
-                if (pages.Length == 0) throw new Exception("页码范围无效：" + job.RangeText);
+                // v1.2.2 修（2026-11-08 拍板）：防御兜底——范围文本路径的"空集"已由 PageSequence 抛 RangeInvalidException，
+                // 走到这里的只剩显式页序被全部滤空（全越界）这种引擎侧异常；泛型 Exception → PrintEngineException，消息不变。
+                if (pages.Length == 0) throw new PrintEngineException("页码范围无效：" + job.RangeText);
                 bool booklet = E.Booklet;   // 小册子优先：强制 2 版横排，忽略每页版数与奇偶页
                 using (var doc = new PrintDocument())
                 {
                     doc.DocumentName = job.DisplayName ?? job.Name;
                     ApplyPrinter(doc, job);
-                    int n = booklet ? 2 : Math.Max(1, E.PagesPerSheet);
+                    // v1.2.2 修（2026-11-08 拍板）：拼版入口的白名单防御——生效参数里的每页版数若被旧数据/
+                    // 手改模板带成 {1,2,4,6,9,16} 之外的值，这里一律归 1（单版单页），不让非法值走进拼版数学
+                    //（ComputeGrid 的 default 档虽兜成 1×1，但 sheetCount 仍按非法 n 切分，版面会错乱）。
+                    int n = booklet ? 2 : PagesPerSheetSafe(E.PagesPerSheet);
                     if (n == 1)
                     {
                         int pos = 0;
@@ -258,7 +265,21 @@ namespace BatchPrintCN
             return new Rectangle(x, y, w, h);
         }
 
-        private static void ComputeGrid(int n, out int cols, out int rows, out bool landscape)
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：每页版数白名单（{1,2,4,6,9,16}，与设置面板 PagesValues 同一份名单）——
+        /// 白名单内的原样返回，之外的（含 0/负数/非法大值）归 1。调用点：PrintPdfFile 拼版入口（防御）。
+        /// </summary>
+        internal static int PagesPerSheetSafe(int v)
+        {
+            switch (v)
+            {
+                case 2: case 4: case 6: case 9: case 16: return v;
+                default: return 1;
+            }
+        }
+
+        // 拼版网格（纯函数）：n → 列×行＋横竖。v1.2.2 修：private → internal，白名单矩阵用例直测（经 InternalsVisibleTo）。
+        internal static void ComputeGrid(int n, out int cols, out int rows, out bool landscape)
         {
             switch (n)
             {

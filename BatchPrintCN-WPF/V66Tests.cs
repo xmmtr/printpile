@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -85,10 +86,16 @@ namespace BatchPrintCN
                     && UpdateDownloader.SafeVersion(null) == "unknown");
                 string zipPath = UpdateDownloader.TempPathFor(UpdEntry("1.0.1.0", "https://printpile.cn/dl/PrintPile-v1.0.1.0-portable.zip", "n"));
                 string exePath = UpdateDownloader.TempPathFor(UpdEntry("1.0.1.0", "https://printpile.cn/dl/PrintPile-Setup-v1.0.1.exe", "n"));
-                Check(bad, "66 号 临时文件命名＝%TEMP%\\PrintPile-update-<版本>.<exe|zip>（扩展名按 URL 尾巴判，查询串不参与）",
+                // v1.2.2 修（2026-11-08 拍板）：临时名加"进程号-随机串"后缀防双副本互踩——断言按新口径修准（加严不放宽）：
+                // 版本段之后必须有后缀段、同进程再次调用返回同一路径（取消清理/TempExists 靠它同步）。
+                string pid = Process.GetCurrentProcess().Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                string tag = "-" + pid + "-";
+                string againPath = UpdateDownloader.TempPathFor(UpdEntry("1.0.1.0", "https://printpile.cn/dl/PrintPile-v1.0.1.0-portable.zip", "n"));
+                Check(bad, "66 号 临时文件命名＝%TEMP%\\PrintPile-update-<版本>-<进程号-随机串>.<exe|zip>（v1.2.2 加进程后缀防双副本互踩；扩展名按 URL 尾巴判，查询串不参与）",
                     zipPath.StartsWith(Path.GetTempPath(), StringComparison.OrdinalIgnoreCase)
-                    && zipPath.EndsWith("PrintPile-update-1.0.1.0.zip", StringComparison.OrdinalIgnoreCase)
-                    && exePath.EndsWith("PrintPile-update-1.0.1.0.exe", StringComparison.OrdinalIgnoreCase)
+                    && zipPath.Contains("PrintPile-update-1.0.1.0" + tag) && zipPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                    && exePath.Contains("PrintPile-update-1.0.1.0" + tag) && exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(zipPath, againPath, StringComparison.OrdinalIgnoreCase)
                     && UpdateDownloader.TempPathFor(UpdEntry("1.0.1.0", "https://printpile.cn/a.zip?x=1", "n")).EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
 
                 // ===== ② 白名单：清单被换指向也别下载 =====
@@ -211,7 +218,8 @@ namespace BatchPrintCN
                     return UpdateDownloader.Outcome.Success(Path.Combine(Path.GetTempPath(), "PrintPile-update-1.0.1.0.exe"));
                 };
                 UpdateState.ResetForTest();
-                var dlg = new UpdateDialog(UpdEntry("1.0.1.0", "https://printpile.cn/PrintPile-Setup-v1.0.1.0.exe", "修 3 处"), new Version(1, 0, 0, 0), true);
+                var entSetup = UpdEntry("1.0.1.0", "https://printpile.cn/PrintPile-Setup-v1.0.1.0.exe", "修 3 处");
+                var dlg = new UpdateDialog(entSetup, new Version(1, 0, 0, 0), true);
                 bool p0 = dlg.CurrentPhaseForTest == UpdateDialog.Phase.Confirm;
                 string firstPrimary = dlg.PrimaryTextForTest;
                 dlg.PressPrimaryForTest();
@@ -228,8 +236,13 @@ namespace BatchPrintCN
                     p0 && p1 && Math.Abs(pct - 100) < 0.01 && hint1.Length > 0 && handed);
                 Check(bad, "66 号 交棒后左下角按钮消失（状态进 Installing，本会话不再提示）",
                     !UpdateState.ButtonVisible && UpdateState.Pending == null);
+                // v1.2.2 修（2026-11-08 拍板）：临时名已带"进程号-随机串"后缀防双副本互踩（UpdateFlow.TempPathFor），
+                // 本条判据按新口径修准（加严不放宽）：起进程路径必须全路径等于下载器对同一清单条目算出的落盘路径
+                // （假流返回值会被 RunAsync 覆盖成 TempPathFor 结果再交棒，见 UpdateFlow.RunAsync），
+                // 比旧口径"只对文件名尾巴"更严——目录、版本段、后缀段、扩展名一起钉死，仍证明"不另猜名字"。
+                string expectedLaunch = UpdateDownloader.TempPathFor(entSetup);
                 Check(bad, "66 号 起的就是下载到的那个文件（路径取下载结果，不另猜名字）",
-                    launched != null && launched.EndsWith("PrintPile-update-1.0.1.0.exe", StringComparison.OrdinalIgnoreCase));
+                    launched != null && launched == expectedLaunch);
 
                 // ===== ⑨ 弹窗（便携版）：不自动覆盖，给解压提示＋【打开所在文件夹】 =====
                 UpdateState.ResetForTest();

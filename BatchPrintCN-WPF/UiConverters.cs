@@ -54,20 +54,6 @@ namespace BatchPrintCN
         }
     }
 
-    /// <summary>修整7（V4.4）：字符串为空/空白 → Visible（页码范围单元格里的灰字占位水印，用户输入后自动收起）。</summary>
-    public class EmptyTextToVisibilityConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return string.IsNullOrWhiteSpace(value as string) ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return Binding.DoNothing;
-        }
-    }
-
     /// <summary>V4.4 三批·修复B：Element Plus 按钮"内容文字固定字色"的模板选择器（Styles.xaml BtnContentSelector）。
     /// 纯文字按钮套 BtnContentTemplate（把 Foreground 钉回按钮自己那份拍板色）；按钮自带 ContentTemplate 的原样交回；
     /// 内容是元素且无自带模板的交回 null 走默认。实测：选择器返回 null 时 ContentPresenter 不会回落 ContentTemplate，

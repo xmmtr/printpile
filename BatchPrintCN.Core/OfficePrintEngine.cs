@@ -42,9 +42,10 @@ namespace BatchPrintCN
                     _log("已通过静默转 PDF 无感打印（引擎：" + ActualEngine(job) + "；双面/黑白/纸张/缩放/份数均已生效）。");
                     return pages;
                 }
-                throw new Exception("文档转换或打印失败，请用 Office/WPS 打开检查文件是否正常。");
+                // v1.2.2 修（2026-11-08 拍板）：泛型 Exception → PrintEngineException（引擎走不下去；消息与上层 catch 口径不变）。
+                throw new PrintEngineException("文档转换或打印失败，请用 Office/WPS 打开检查文件是否正常。");
             }
-            throw new Exception("该格式不是 Office/WPS 支持打印的类型（支持 doc/docx/odt/rtf、xls/xlsx/ods/csv、ppt/pptx/odp、txt）。");
+            throw new PrintEngineException("该格式不是 Office/WPS 支持打印的类型（支持 doc/docx/odt/rtf、xls/xlsx/ods/csv、ppt/pptx/odp、txt）。");
         }
 
     }

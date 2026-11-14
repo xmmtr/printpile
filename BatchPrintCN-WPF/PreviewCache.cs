@@ -122,5 +122,30 @@ namespace BatchPrintCN
 
         /// <summary>自检/清理用：缓存目录。</summary>
         public static string Directory4Test { get { return Dir; } }
+
+        /// <summary>v1.2.2 修（2026-11-08 拍板）：预览缓存旧产物的年龄上限（天）。键里含源文件改动时间，
+        /// 产物本身"过期"只意味着"对应的那一版源文件大概率早就不在了"，7 天足够宽。</summary>
+        internal const int StaleDays = 7;
+
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：清扫 tmp\preview 里 7 天前的旧产物。
+        /// 缘由：预览缓存目录此前被启动清扫豁免（CleanupTmp 只删 tmp 根下的文件）且无任何清理，
+        /// 长期使用会只增不减；按年龄清（不动 7 天内的产物）对当次会话零影响，正在被预览窗口
+        /// 读着的文件也因年龄未到不会被碰。逐文件 try/catch：单个文件删不掉（正被占用）就留给下次。
+        /// </summary>
+        public static void CleanStale()
+        {
+            try
+            {
+                string d = Dir;
+                if (!Directory.Exists(d)) return;
+                DateTime threshold = DateTime.UtcNow.AddDays(-StaleDays);
+                foreach (string f in Directory.GetFiles(d))
+                {
+                    try { if (File.GetLastWriteTimeUtc(f) < threshold) File.Delete(f); } catch { }
+                }
+            }
+            catch { }
+        }
     }
 }

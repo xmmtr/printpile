@@ -364,11 +364,8 @@ namespace BatchPrintCN
                     ? solid["BtnSolidTextBrush"]
                     : solid["BtnLightAreaTextBrush"];
             }
-            if (danger.HasValue)
-            {
-                solid["DangerBorderBrush"] = Alpha(danger.Value, 0.55);
-                solid["DangerSoftBrush"] = Alpha(danger.Value, 0.08);
-            }
+            // v1.2.2 修（2026-11-08 拍板）：删掉这段重复赋值块——DangerBorderBrush/DangerSoftBrush 与上方
+            // danger 块（同值同键）逐字重复，纯冗余；值与语义均以先赋的那份为准，清理后行为不变。
             if (success.HasValue) solid["SuccessSoftBrush"] = Alpha(success.Value, 0.12);
             if (primary.HasValue) solid["ScrollerThumbBrush"] = Alpha(primary.Value, 0.35);
             if (border.HasValue) solid["ButtonBackgroundPressed"] = border.Value;

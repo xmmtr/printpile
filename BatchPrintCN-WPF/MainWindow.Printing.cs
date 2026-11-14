@@ -232,8 +232,50 @@ namespace BatchPrintCN
             return L("s.PlanCustomFields").Replace("{0}", string.Join(L("s.ListSep"), ov.CustomFields(L)));
         }
 
+        private string _printoutDirThisRun;   // v1.2.2 功能（2026-11-13）：本批询问选定的保存目录（null=未询问/用默认）
+
+        /// <summary>v1.2.2 功能（2026-11-13 老板需求）：打印到「Microsoft Print to PDF」前询问保存位置（每批一次）。
+        /// 非虚拟打印机或设置页关了「打印前询问保存位置」时直接放行；返回 false＝用户取消（整批不打印）。
+        /// 监视自动打印从后台线程进来，挂起等待用户选择（与"每次询问"语义一致）。</summary>
+        private bool EnsurePrintoutLocation()
+        {
+            _printoutDirThisRun = null;
+            if (_lastPrinter == null || _lastPrinter.IndexOf("Microsoft Print to PDF", StringComparison.OrdinalIgnoreCase) < 0) return true;
+            if (!SettingsService.AskPrintoutEveryTime) return true;
+            bool ok = true;
+            if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(new Action(() => ok = AskPrintoutLocationNow())); return ok; }
+            return AskPrintoutLocationNow();
+        }
+
+        private bool AskPrintoutLocationNow()
+        {
+            var dlg = new SaveLocationDialog(L("s.SaveLocTitle"), SettingsService.PrintoutDirectory,
+                L("s.SaveLocBrowse"), L("s.SaveLocDontAsk"), L("s.SaveLocNote")) { Owner = this };
+            if (dlg.ShowDialog() != true)
+            {
+                AppendLog(L("s.SaveLocCancelled"));
+                return false;
+            }
+            _printoutDirThisRun = dlg.SelectedPath;
+            if (dlg.DontAskAgain)
+            {
+                // 勾「每次不询问」：记住默认目录＋关掉询问（与设置页开关同一份持久化键）
+                SettingsService.SetAskPrintoutEveryTime(false);
+                SettingsService.SetPrintoutDirectory(dlg.SelectedPath);
+            }
+            return true;
+        }
+
         private void StartWorker(List<PrintJob> jobs)
         {
+            // v1.2.2 功能（2026-11-13）：虚拟打印机保存位置询问放在开线程前（UI 线程/监视线程经 Dispatcher 归位）。
+            // 取消＝整批不打印：撤忙碌态、状态回就绪，并记日志。
+            if (!EnsurePrintoutLocation())
+            {
+                SetControlsBusy(false);
+                StatusText.Text = L("s.StatusReady").Replace("{0}", _rows.Count.ToString());
+                return;
+            }
             _worker = new Thread(() =>
             {
                 // M5：加密 PDF 需要密码时，回 UI 线程弹窗输入（Dispatcher.Invoke 阻塞等待用户输入）
@@ -255,7 +297,8 @@ namespace BatchPrintCN
                 // V3.2：注入落盘/保留产物设置到打印选项
                 _options.KeepConvertedPdf = SettingsService.KeepConvertedPdf;
                 _options.ConvertOutputDirectory = SettingsService.ConvertOutputDirectory;
-                _options.PrintoutDirectory = SettingsService.PrintoutDirectory;
+                // v1.2.2 功能（2026-11-13）：本批询问选定的目录优先，未询问/未选定则用设置页默认目录
+                _options.PrintoutDirectory = _printoutDirThisRun ?? SettingsService.PrintoutDirectory;
 
                 var printerObj = new BatchPrinter(_lastPrinter, _options, line => AppendLog(line), done =>
                     // 修整6（V4.4）：整个打印项目一条进度——分子 = 停止前已完成(_progressBase) + 本轮已完成
@@ -602,6 +645,7 @@ namespace BatchPrintCN
             }
             SettingsService.LanguageChanged -= OnLanguageChanged;
             SettingsService.LastPrinterChanged -= OnLastPrinterChanged;   // F15
+            UpdateState.Changed -= OnUpdateStateChanged;   // v1.2.2（审计 P2）：静态事件漏退订——自检门一轮构造多个 MainWindow 时处理器越攒越多
             if (ReferenceEquals(TrayIcon.ExitRequested, (Action)RequestExitFromTray)) TrayIcon.ExitRequested = null;
             TrayIcon.Dispose();      // 修A：真退出必须释放托盘图标（不 Dispose 会在托盘上留一个死图标）
             base.OnClosing(e);

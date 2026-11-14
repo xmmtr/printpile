@@ -302,8 +302,6 @@ namespace BatchPrintCN
         public bool MixedSizes;           // 页与页尺寸不一致
         public readonly List<PageBoundsReport> Pages = new List<PageBoundsReport>();   // 只收有问题的页
 
-        public static readonly OverflowScan NotScanned = Fail("未扫描");
-
         public static OverflowScan Fail(string error) { return new OverflowScan { Scanned = false, Error = error }; }
 
         public bool HasOverflow { get { return Pages.Count > 0; } }

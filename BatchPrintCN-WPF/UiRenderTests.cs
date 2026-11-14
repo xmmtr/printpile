@@ -97,11 +97,11 @@ namespace BatchPrintCN
             code |= RenderWindow("浅色主窗口自检.txt", "浅色主窗口预览.png", wLight, 1260, 820,
                 new[] { "PrinterBox", "BtnRefresh", "BtnPrintSetup", "BtnStart", "BtnStop", "Grid" });
 
-            // V4.4 修整轮（2026-09-20）：主列表整体（「修改」按钮主色浅底/表格边框/份数列/页码水印）中英各一张
+            // V4.4 修整轮（2026-09-20）：主列表整体（「修改」按钮主色浅底/表格边框/份数列/页码输入框——v1.2.2 水印移除改带边框）中英各一张
             Mark("主窗口深/浅两遍渲染");
             code |= PhaseCode("V4.4主列表", () => V44RowCardRender("主列表修整预览.png", "主列表修整自检.txt"));
             code |= PhaseCode("V4.4主列表", () => V44RowCardRender("主列表修整预览-英文.png", "主列表修整英文自检.txt", AppLanguage.EnUS));
-            // 参数弹窗（浅/深/英）+ 页码水印特写（中英）；列头打印前后对比由 --selftest 的修整5 取证产出
+            // 参数弹窗（浅/深/英）+ 页码范围输入框特写（中英；v1.2.2 原水印特写改名）；列头打印前后对比由 --selftest 的修整5 取证产出
             code |= PhaseCode("V4.4修整渲染", () => V44FixRender("V44修整渲染自检.txt"));
             // V4.4 二批（修整9~15）：主页宽/中/最小三档 + 历史页宽/最小 + 文件名截断与悬浮全名 + 边框特写浅/深 + 英文两档
             code |= PhaseCode("V4.4二批渲染", () => V44Fix2Render("V44修整渲染自检.txt"));

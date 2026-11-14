@@ -101,8 +101,9 @@ namespace BatchPrintCN
                     + "；开→关再读回=" + roundTrip + "（DTO 现 " + PersistKeyCount() + " 枚）");
                 Check(bad, "80 号 设置兼容：老配置缺该键读作 false（默认关），保存后一律带上；开关联动回写读回一致",
                     loadOk && defaultOff && writtenBack && roundTrip);
-                Check(bad, "80 号 键账：settings.json 持久化 DTO 12 枚（73 号 11 枚 ＋ 本令 autoStart 一枚）",
-                    PersistKeyCount() == 12);
+                // v1.2.2 功能（2026-11-13 老板需求）就地改判：12 → **14 枚**——新增 printoutDir 与 askPrintoutEveryTime 两枚
+                Check(bad, "80 号 键账：settings.json 持久化 DTO 14 枚（73 号 11 枚 ＋ 80 号 autoStart 一枚 ＋ v1.2.2 虚拟打印机保存位置两枚）",
+                    PersistKeyCount() == 14);
 
                 // ===== ⑤ 设置页开关：控件在可视树实取、默认态＝关；翻一下真的动注册表 =====
                 var sp = new SettingsPage();
@@ -119,12 +120,12 @@ namespace BatchPrintCN
                 Check(bad, "80 号 设置页开关：控件实取在位、默认关，且翻动真的写/删 HKCU 那枚值（UI→注册表同一条路）",
                     tgl != null && shownOff && uiOn && uiOff);
 
-                // ===== ⑥ 版本：1.2.1.0（对外三位 1.2.1） =====
+                // ===== ⑥ 版本：1.2.2.0（对外三位 1.2.2；2026-11-08 拍板随主线实升） =====
                 string fv = null;
                 try { fv = FileVersionInfo.GetVersionInfo(Process.GetCurrentProcess().MainModule.FileName).FileVersion; } catch { }
                 sb.AppendLine("— ⑥ 版本：FileVersion=" + fv + " AssemblyVersion=" + AppVersion.Full + " 界面＝" + AppVersion.Display);
-                Check(bad, "80 号 版本：FileVersion／AssemblyVersion 均 1.2.1.0，界面显示 v1.2.1",
-                    fv == "1.2.1.0" && AppVersion.Full == "1.2.1.0" && AppVersion.Display == "v1.2.1");
+                Check(bad, "80 号 版本（2026-11-08 拍板随主线升 1.2.2.0）：FileVersion／AssemblyVersion 均 1.2.2.0，界面显示 v1.2.2",
+                    fv == "1.2.2.0" && AppVersion.Full == "1.2.2.0" && AppVersion.Display == "v1.2.2");
             }
             catch (Exception ex)
             {
@@ -143,7 +144,7 @@ namespace BatchPrintCN
             }
             WriteDiag("80号开机自启动定位.txt", sb.ToString());
             return bad.Count == 0
-                ? "通过（80 号：①带引号全路径纯函数三例 ②真实 HKCU 开→读到→关→读不到 ③连开两次值不变·连关两次不抛 ④老配置缺键读作关且回写带上·DTO 12 枚 ⑤设置页开关实取在位默认关·翻动真的写删注册表 ⑥FileVersion=1.2.1.0；本机原值测毕已还原；逐条数字见 80号开机自启动定位.txt）"
+                ? "通过（80 号：①带引号全路径纯函数三例 ②真实 HKCU 开→读到→关→读不到 ③连开两次值不变·连关两次不抛 ④老配置缺键读作关且回写带上·DTO 14 枚（v1.2.2 加两枚） ⑤设置页开关实取在位默认关·翻动真的写删注册表 ⑥FileVersion=1.2.2.0（2026-11-08 拍板随主线升）；本机原值测毕已还原；逐条数字见 80号开机自启动定位.txt）"
                 : "失败：" + string.Join("；", bad);
         }
 

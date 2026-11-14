@@ -72,7 +72,8 @@ namespace BatchPrintCN
                   + "A 口径按表格所在节的版心算（多分节文档不再拿错页边距），非 docx 如实回\"暂不体检\"；状态列新增种类走 40 号同一套结构化上色、六行行高仍只剩 36.8；"
                   + "改2：作业摘要行逐字段齐（类型/引擎/页数/纸张方向/缩放生效值/黑白彩色/份数/打印机/结果）、转换行含耗时与页面尺寸、两级警告行措辞分得开、无 {0} 残留；"
                   + "改3：预览标题与信息条逐字段、页序与打印同源（范围/奇偶联动只显将打印的页）、超界标注数值与改1 同源、点缩略图切页、"
-                  + "「加入打印队列」＝勾选该行 + 一句日志 + 关窗、缓存命中第二次不再转换；全程离线不启动 Office）"
+                  + "「加入打印队列」＝勾选该行 + 一句日志 + 关窗、缓存命中第二次不再转换；"
+                  + "v1.2.2 修：参数编辑条单行不换行（极窄横向滚动兜底）、图片双击预览直接渲染图片本身不再要 PDF（坏图如实报「图片载入失败」）；全程离线不启动 Office）"
                 : "失败：" + string.Join("；", bad);
         }
 
@@ -334,9 +335,11 @@ namespace BatchPrintCN
             var pRange = PreviewWindow.PagesToShow(4, "1,3", opt);
             var pOdd = PreviewWindow.PagesToShow(4, "", new PrintOptions { PageParity = PageParityMode.Odd });
             var pBad = PreviewWindow.PagesToShow(4, "99", opt);
+            // v1.2.2 修（2026-11-08 拍板）：引擎对"解析为空的范围"改抛 RangeInvalidException 记失败（不再回退打全部）；
+            // 预览 PagesToShow 的 catch 只作展示层降级仍照全部页显示，断言数值不变，仅修准这两行描述文案。
             sb.AppendLine("— 页序联动：全部=" + string.Join(",", pAll.ToArray()) + " 范围 1,3=" + string.Join(",", pRange.ToArray())
-                + " 仅奇数=" + string.Join(",", pOdd.ToArray()) + " 范围全无效=" + string.Join(",", pBad.ToArray()) + "（引擎回退打全部，预览同口径）");
-            Check(bad, "改3 预览只显示\"将会打印\"的页：无范围全显、范围 1,3 只显两页、仅奇数页只显 1/3、范围全无效按引擎既有口径回退显全部",
+                + " 仅奇数=" + string.Join(",", pOdd.ToArray()) + " 范围全无效=" + string.Join(",", pBad.ToArray()) + "（引擎已改失败记账，预览此处仍按全部页作展示层降级）");
+            Check(bad, "改3 预览只显示\"将会打印\"的页：无范围全显、范围 1,3 只显两页、仅奇数页只显 1/3、范围全无效时预览按展示层降级显全部（引擎侧 v1.2.2 起记失败）",
                 pAll.Count == 4 && pRange.Count == 2 && pRange[0] == 0 && pRange[1] == 2
                 && pOdd.Count == 2 && pOdd[0] == 0 && pOdd[1] == 2 && pBad.Count == 4);
 
@@ -472,6 +475,42 @@ namespace BatchPrintCN
             File.SetLastWriteTimeUtc(docx, DateTime.UtcNow.AddSeconds(3));
             string key2 = PreviewCacheKeyOf(cjob);
             Check(bad, "改3 缓存键随源文件走（改过文件不复用旧产物）", key2 != key);
+
+            // ===== v1.2.2 修（2026-11-14 实机反馈 4 号）：图片双击预览＝直接渲染图片本身，不再走「转 PDF」通道 =====
+            // 此前图片统一进 PreviewCache.EnsurePdf → ConvertToPdfForPreview，而图片没有转换器，预览弹「转换未产出 PDF」。
+            string png = Path.Combine(dir, "photo.png");
+            using (var bmp = new System.Drawing.Bitmap(200, 100))
+            using (var g = System.Drawing.Graphics.FromImage(bmp))
+            {
+                g.Clear(System.Drawing.Color.White);
+                using (var pen = new System.Drawing.Pen(System.Drawing.Color.Red, 2)) g.DrawRectangle(pen, 5, 5, 190, 90);
+                bmp.Save(png, System.Drawing.Imaging.ImageFormat.Png);
+            }
+            var irow = w.AddRowForTest(new PrintJob { FilePath = png, Kind = DocKind.Image });
+            var ipv = w.OpenPreviewForTest(irow);
+            ipv.LoadImageForTest(png);
+            PumpToLoaded();
+            ipv.ZoomToForTest(100);   // 实际像素档：200px@96dpi 的图＝150pt 页，100% 出图宽应恰为 200 DIP
+            sb.AppendLine("— 图片直渲：页数=" + ipv.Pages.Count + " 缩略图 " + ipv.Thumbs.Items.Count + " 张 信息条=" + ipv.ChipsText
+                + " 100%页面宽=" + ipv.SheetWidthForTest.ToString("0.#") + "DIP 提示行=\"" + (ipv.HintTextForTest ?? "") + "\"");
+            Check(bad, "v1.2.2 图片直渲：图片不再要 PDF（单页直渲、信息条报「直接渲染，不转 PDF」且不再有「→ PDF」转换态、100% 出图宽＝像素尺寸 200DIP）",
+                ipv.IsImageModeForTest && ipv.Pages.Count == 1 && ipv.Thumbs.Items.Count == 1 && ipv.ShownIndex == 0
+                && ipv.ChipsText.Contains("图片（直接渲染，不转 PDF）") && !ipv.ChipsText.Contains("→ PDF")
+                && Math.Abs(ipv.SheetWidthForTest - 200) < 1.5
+                && string.IsNullOrEmpty(ipv.HintTextForTest));
+            // 坏图：如实报「图片载入失败」，绝不回到「转换未产出 PDF」的旧话术
+            string broken = Path.Combine(dir, "broken.png");
+            File.WriteAllText(broken, "这不是一张图片");
+            var brow = w.AddRowForTest(new PrintJob { FilePath = broken, Kind = DocKind.Image });
+            var bpv = w.OpenPreviewForTest(brow);
+            bpv.LoadImageForTest(broken);
+            PumpToLoaded();
+            sb.AppendLine("— 坏图如实报错：提示行=\"" + (bpv.HintTextForTest ?? "") + "\"");
+            Check(bad, "v1.2.2 坏图如实报错（提示行＝「图片载入失败：…」，不再弹「转换未产出 PDF」）",
+                !string.IsNullOrEmpty(bpv.HintTextForTest) && bpv.HintTextForTest.StartsWith("图片载入失败")
+                && !bpv.HintTextForTest.Contains("转换未产出"));
+            ipv.Close();
+            bpv.Close();
             return bad;
         }
 
@@ -506,7 +545,9 @@ namespace BatchPrintCN
                     var pv = w.OpenPreviewForTest(row);
                     pv.LoadForTest(near, job.Diag.Overflow, job.Diag.SourceLayout);
                     PumpToLoaded();
-                    code |= RenderWindow("V492" + ts + "预览自检.txt", "V492预览窗口-" + ts + ".png", pv, 1080, 720, new string[0], 0);
+                    // v1.2.2 修（2026-11-14 实机反馈 1 号）：出图宽 1080→1300＝预览窗新默认宽（参数编辑条单排后 MinWidth 1260），
+                    // 出图与真机默认态一致（1080 下编辑条会走横向滚动兜底，那是窄窗的合法形态，不再当默认证据）
+                    code |= RenderWindow("V492" + ts + "预览自检.txt", "V492预览窗口-" + ts + ".png", pv, 1300, 720, new string[0], 0);
                     sb.AppendLine("—" + ts + "：预览窗口（信息条 + 顶部警告条 + 左缩略图 + 大页叠版心虚线框与超界红斜纹）出图");
                     pv.Close();
                     // RenderWindow 会把窗口 Content 摘到垫色宿主里（一次出图后窗口已空），所以"参数编辑态"必须另开一扇窗出图
@@ -519,7 +560,7 @@ namespace BatchPrintCN
                     ((System.Windows.Controls.TextBox)pv2.PvEditorsForTest[6]).Text = "1";
                     pv2.PvCommitTextForTest();
                     PumpToLoaded();
-                    code |= RenderWindow("V492" + ts + "预览参数编辑态自检.txt", "V492预览窗口-参数编辑态-" + ts + ".png", pv2, 1080, 720, new string[0], 0);
+                    code |= RenderWindow("V492" + ts + "预览参数编辑态自检.txt", "V492预览窗口-参数编辑态-" + ts + ".png", pv2, 1300, 720, new string[0], 0);
                     sb.AppendLine("—" + ts + "：参数编辑态（双面-长边／横版／2 份／范围 1→只显 1 页）出图，摘要行=" + pv2.ChipsText);
                     pv2.Close();
                     // 主窗口这里不 Close：41 号起 Close 会走"关闭行为"分支，自检/渲染环境里可能弹模态提示窗把整轮挂住

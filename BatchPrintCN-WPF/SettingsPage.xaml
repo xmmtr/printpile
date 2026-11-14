@@ -148,6 +148,34 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                 </ui:CardControl.Header>
             </ui:CardControl>
 
+            <!-- v1.2.2 功能（2026-11-13 老板需求）：虚拟打印机保存位置——默认文件夹＋「打印前询问保存位置」开关。
+                 仅对 Microsoft Print to PDF 生效（程序能控制输出路径的唯一虚拟打印机）；询问对话框里也可勾「每次不询问」。 -->
+            <ui:CardControl Padding="16,12" Margin="0,0,0,8">
+                <ui:CardControl.Icon>
+                    <ui:SymbolIcon Symbol="Save24" FontSize="20"/>
+                </ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource s.SettingsPrintoutTitle}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource s.SettingsPrintoutNote}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Vertical" MinWidth="340">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="PrintoutDirBox" Style="{StaticResource InputGlowBox}" VerticalContentAlignment="Center" LostFocus="OnPrintoutDirChanged"
+                                 ToolTip="{DynamicResource s.SettingsPrintoutNote}"/>
+                        <Button x:Name="BtnBrowsePrintout" Grid.Column="1" Content="{DynamicResource s.SaveLocBrowse}"
+                                Style="{StaticResource BtnOutline}" Margin="10,0,0,0" Click="OnBrowsePrintout"/>
+                    </Grid>
+                    <CheckBox x:Name="PrintoutAskBox" Content="{DynamicResource s.SettingsPrintoutAsk}" Margin="0,10,0,0"
+                              Checked="OnPrintoutAskChanged" Unchecked="OnPrintoutAskChanged"/>
+                </StackPanel>
+            </ui:CardControl>
+
             <!-- 打印统计（R3）：开关用 ToggleSwitch。修D 之后这一行是本页末行（底部间距归零，不留空白区）；
                  统计 CSV 的落盘目录不再提供选择，固定用既有默认目录（＝日志目录）。 -->
             <ui:CardControl Padding="16,12" Margin="0,0,0,0">

@@ -66,7 +66,10 @@ namespace BatchPrintCN
         {
             if (!_checked) return "";
             if (!_hasCom) return "未检测到 Office/WPS";
-            if (_detectedId.StartsWith("Kw", StringComparison.OrdinalIgnoreCase)) return "已检测到：WPS Office（将用 COM）";
+            // v1.2.2 修：WPS 三件套 ProgID 是 Kwps/Ket/Kwpp——旧判法只认 "Kw" 前缀，
+            // 只装 WPS 表格（Ket.Application）的机器被误报"已检测到：Microsoft Office"。改按显式名单。
+            if (_detectedId == "Kwps.Application" || _detectedId == "Ket.Application" || _detectedId == "Kwpp.Application")
+                return "已检测到：WPS Office（将用 COM）";
             return "已检测到：Microsoft Office（将用 COM）";
         }
 

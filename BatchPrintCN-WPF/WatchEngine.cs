@@ -118,11 +118,21 @@ namespace BatchPrintCN
                         {
                             IncludeSubdirectories = r.IncludeSubfolders,
                             NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+                            // v1.2.2 修（2026-11-08 拍板）：内部缓冲从默认 4KB 提到 64KB——大批量落文件时
+                            // 4KB 很容易溢出，溢出即触发 Error 且 watcher 之后不可靠（配合下方重扫兜底）。
+                            InternalBufferSize = 64 * 1024,
                             EnableRaisingEvents = true
                         };
                         st.Watcher.Created += (s, e) => OnEvent(st, e.FullPath);
                         st.Watcher.Renamed += (s, e) => OnEvent(st, e.FullPath);
-                        st.Watcher.Error += (s, e) => FileLogger.Write("监视「" + WatchRules.DisplayNameOf(r) + "」观察者报错：" + (e.GetException() == null ? "" : e.GetException().Message));
+                        // v1.2.2 修（2026-11-08 拍板）：Error（内部缓冲溢出等）之后该观察者已不可靠——
+                        // 原来只写日志等于静默漏文件；现在记日志后交 RescanAfterError 重建观察者并全目录重扫。
+                        st.Watcher.Error += (s, e) =>
+                        {
+                            FileLogger.Write("监视「" + WatchRules.DisplayNameOf(r) + "」观察者报错："
+                                + (e.GetException() == null ? "" : e.GetException().Message) + "（将重建并全目录重扫）");
+                            RescanAfterError();
+                        };
                     }
                     catch (Exception ex)
                     {
@@ -216,6 +226,45 @@ namespace BatchPrintCN
         private static long SafeSize(string path)
         {
             try { return new FileInfo(path).Length; } catch { return -1; }
+        }
+
+        // ===== v1.2.2 修（2026-11-08 拍板）：Error 后的重建与全目录重扫 =====
+
+        /// <summary>
+        /// 观察者报错（内部缓冲溢出/句柄失效等，<b>出错后该 watcher 不可靠</b>）后的兜底：
+        /// ① 按当前规则表整体重建观察者（复用既有 <see cref="Apply"/>，结构不改、不另起一套）；
+        /// ② 对重建出的每条规则做一次全目录重扫——已在盘上的文件经同一个 <see cref="OnEvent"/> 入候选表，
+        ///    稳定性判定/类型/时段/去重照常把关，不会把打过的文件再打一遍。
+        /// 时机：Error 回调在 watcher 的线程池线程上，这里交回 UI 线程执行（与泵同一 Dispatcher；
+        /// 盘大时枚举略耗时，Background 优先级不抢界面；自检桩不真起 watcher，此路真机才会走到）。
+        /// </summary>
+        private static void RescanAfterError()
+        {
+            var d = System.Windows.Application.Current == null ? null : System.Windows.Application.Current.Dispatcher;
+            if (d != null) { d.BeginInvoke(new Action(RescanNow), System.Windows.Threading.DispatcherPriority.Background); return; }
+            RescanNow();   // 无 Dispatcher（极端时序）就原地做，逻辑不变
+        }
+
+        /// <summary>重建观察者＋全目录重扫的本体（UI 线程上跑；内部各自上锁，与泵互不踩）。</summary>
+        internal static void RescanNow()
+        {
+            List<WatchRule> rules = WatchRuleStore.Load();
+            Apply(rules);
+            lock (Sync)
+            {
+                foreach (State st in States.Values) EnqueueExisting(st);
+            }
+        }
+
+        /// <summary>把规则目录里现存的文件逐个送进同一个候选入口 <see cref="OnEvent"/>（重复触发有去重，不抛）。</summary>
+        private static void EnqueueExisting(State st)
+        {
+            try
+            {
+                var opt = st.Rule.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                foreach (string f in Directory.EnumerateFiles(st.Rule.Folder, "*", opt)) OnEvent(st, f);
+            }
+            catch (Exception ex) { FileLogger.Write("监视「" + WatchRules.DisplayNameOf(st.Rule) + "」全目录重扫失败：" + ex.Message); }
         }
 
         // ===== 泵：稳定性判定 → 时段 → 交给主窗 =====

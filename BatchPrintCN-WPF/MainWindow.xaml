@@ -34,8 +34,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         <local:CopiesTextToNumberConverter x:Key="CopiesNum"/>
         <!-- F5（V4.4）：参数列"跟随全局 / 自定义 ●"与展开箭头的反向可见性 -->
         <local:InverseBoolToVisibilityConverter x:Key="NotBoolToVis"/>
-        <!-- 修整7（V4.4）：页码范围单元格的灰字占位水印（值为空才显示） -->
-        <local:EmptyTextToVisibilityConverter x:Key="EmptyToVis"/>
+        <!-- v1.2.2 修（2026-11-14 实机反馈 2 号）：页码范围列灰字占位水印整列移除（老板原话"输入框里的字显示不完全，
+             直接留空就好"，空值语义仍是"全部页面"、顶部横幅页码提示不变），修整7 的 EmptyTextToVisibilityConverter
+             资源声明随之删除（转换器类也已从 UiConverters.cs 移除）。 -->
+
         <!-- 修整14/15（V4.4 二批）：列头样式 NoGripHeader、整行/整格边线 GridRowLine/GridCellLine、
              单元格文字 CellText/CellTextName 全部上移到 Styles.xaml——历史页与主列表共用同一份，
              两页观感严格一致（历史页在自检里会被独立实例化，资源必须放应用级才取得到）。 -->
@@ -213,8 +215,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                                      页数随后又回到 60：52 宽下英文列头 "Pages" 实测折成两行（列头是生成内容、
                                      吃应用级隐式 TextBlock 的 Wrap，局部样式管不到＝#25 那条），从页码范围让 8 回来，
                                      固定列合计不变（960 档文件名仍实得 118）。 -->
+                                <!-- v1.2.2 修（2026-11-14 实机反馈 2 号）：单元格内容水平居中（列头本就居中）；
+                                     列宽 64 未动，固定列合计仍 576（修整16②/18 的 960 档断言口径不变）。 -->
                                 <DataGridTextColumn Header="{DynamicResource s.ColType}" Binding="{Binding KindText}" IsReadOnly="True" Width="64"
-                                                    ElementStyle="{StaticResource CellText}"/>
+                                                    ElementStyle="{StaticResource CellTextCenter}"/>
                                 <!-- V4.9 版本内修整·修2：页数列与页码范围联动（未填范围＝现状文案"N 页"，填了＝"X/N页"绿 /
                                      部分超出黄 / 一个有效页码都没有＝"未生效"红），上色走 RangeState（CellTextPages），
                                      与状态列同一口径只认结构化结论。
@@ -231,7 +235,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                                      修整1/B-2 起「份数」的唯一入口就是这一列（逐文件参数弹窗里不再有此项）。
                                      修整17（四批）：列宽 68→90（MinWidth 60→72，需求方实测观感"一小点"）；
                                      格子内容改竖向也铺满（GridCellLineFill，观感＝整个格子就是一个输入框）。
-                                     输入框仍透明底+无边框（修整2 口径）——底色就是行底色，天然随主题（三批 GridRowBgBrush 教训）；
+                                     v1.2.2 修（2026-11-14 实机反馈 2 号）：老板实机反馈"无边框看起来像纯文本"——输入框加可见边框
+                                     （CellBoxFill 里 BorderThickness=1、色走主题键 InputBorderBrush，浅深两套基座都可辨）；
+                                     底色仍透明——底色就是行底色，天然随主题（三批 GridRowBgBrush 教训；修整17d 断言继续成立）；
                                      模板换成 CellBoxFill（只留文本宿主），铺满后不再露库模板那圈圆角内框。 -->
                                 <DataGridTemplateColumn Header="{DynamicResource s.ColCopies}" Width="90" MinWidth="72"
                                                         CellStyle="{StaticResource GridCellLineFill}">
@@ -245,29 +251,37 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <!-- 修整7（V4.4）：列头只留"页码范围"，原括号提示改成单元格里的灰字占位水印（不可选中，输入后隐藏、清空恢复）
-                                     修整12（二批）：与份数列同口径铺满列宽
+                                <!-- 修整7（V4.4）：列头只留"页码范围"。v1.2.2 修（2026-11-14 实机反馈 2 号）：原括号提示先改成单元格灰字占位
+                                     水印，老板实机复看拍板"输入框里的字显示不完全，直接留空就好"——水印整列移除，空值语义仍是"全部页面"
+                                     （顶部横幅 s.PageHint 页码提示不变，功能不变）；s.ColRangeHint 资源键暂留两侧字典（自检 FindWatermark
+                                     改判断言仍按该串比对"水印节点不复存在"）。
+                                     修整12（二批）：与份数列同口径铺满列宽；v1.2.2 起竖向也同口径（CellStyle=GridCellLineFill，
+                                     观感＝整个格子就是一个带可见边框的输入框，与份数列一致）
                                      修整16②（四批，方案②）：180/150 → 122/110，与类型/页数/文件名保底一起把 960 档列合计压进可视宽
                                      （页数要 60 才不折英文列头，故本列从 130 再让 8，固定列合计仍 576、960 档文件名实得 118）
                                      V4.9 修整·修2：本列再让 12 给页数列（122→110＝MinWidth），合计仍 576。 -->
-                                <DataGridTemplateColumn Header="{DynamicResource s.ColRange}" Width="110" MinWidth="110">
+                                <DataGridTemplateColumn Header="{DynamicResource s.ColRange}" Width="110" MinWidth="110"
+                                                        CellStyle="{StaticResource GridCellLineFill}">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
-                                                <!-- V4.9 版本内修整·修4：零有效页码时文字标红、聚焦时再加红框（CellBoxRange 认 IsRangeInvalid）；
-                                                     修3/修5：聚焦开气泡（GotKeyboardFocus/LostKeyboardFocus 驱动，失焦即收）、悬停给同源完整结论 -->
+                                                <!-- V4.9 版本内修整·修4：零有效页码时文字标红、无效且聚焦时边框转红（CellBoxRange 认 IsRangeInvalid；
+                                                     v1.2.2 起边框常在、聚焦红＝变色）。修3/修5：聚焦开气泡（GotKeyboardFocus/LostKeyboardFocus
+                                                     驱动，失焦即收）、悬停给同源完整结论。v1.2.2：文字水平居中，与份数列同口径。 -->
                                                 <TextBox x:Name="RangeBox" Text="{Binding RangeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                          IsEnabled="{Binding Idle, Source={x:Static local:PrintLock.Instance}}"
                                                          Style="{StaticResource CellBoxRange}"
                                                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="0"
+                                                         HorizontalContentAlignment="Center"
                                                          GotKeyboardFocus="OnRangeFocus" LostKeyboardFocus="OnRangeBlur"
                                                          ToolTip="{Binding RangeHint}" ToolTipService.InitialShowDelay="1000"
                                                          ToolTipService.BetweenShowDelay="0" ToolTipService.VerticalOffset="14"/>
-                                                <TextBlock Text="{DynamicResource s.ColRangeHint}" IsHitTestVisible="False" Focusable="False" Style="{StaticResource CellText}"
-                                                           Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
-                                                           Visibility="{Binding RangeText, Converter={StaticResource EmptyToVis}}"/>
                                                 <!-- 修3：聚焦气泡＝浮层，不接收焦点、不占布局空间（铁律：行高锁死 36，行内一律不嵌撑高元素）。
-                                                     文本与页数列、悬停提示同取 RowVm.RangeHint（同一次解析）；朝上/朝下由代码按屏幕几何判（MainWindow.RangeFeedback.cs） -->
+                                                     文本与页数列、悬停提示同取 RowVm.RangeHint（同一次解析）；朝上/朝下由代码按屏幕几何判（MainWindow.RangeFeedback.cs）。
+                                                     v1.2.2 修（实机反馈 3 号）：拖动主窗口后气泡留在屏幕原地不消失——收口改由窗口
+                                                     LocationChanged/Deactivated 主动关（MainWindow.RangeFeedback.cs）；StaysOpen 评估过收紧为
+                                                     false 更激进但会在开气泡瞬间抢鼠标捕获、可能吃掉输入框首次点击的 MouseUp（影响光标定位），
+                                                     故保留 true，靠主动关收口。 -->
                                                 <Popup x:Name="RangeHintPopup" PlacementTarget="{Binding ElementName=RangeBox}"
                                                        Placement="Bottom" VerticalOffset="2" AllowsTransparency="True"
                                                        Focusable="False" IsOpen="False" StaysOpen="True" PopupAnimation="None">
@@ -286,7 +300,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                                      失败态的「重试」按钮列宽不变（Auto），窄列里先挤压状态文字、按钮始终完整在位。
                                      宽度实测定在 76（不是建议区间的 96~110）：长列表时纵向滚动条占 16 DIP，
                                      内层可视只剩 854.4，份数列又要 +22（修整17b），96 会让列合计 870 顶出横向滚动，
-                                     硬约束①（1120 默认宽不滚 + 参数按钮一页可见）优先于建议区间。 -->
+                                     硬约束①（1120 默认宽不滚 + 参数按钮一页可见）优先于建议区间。
+                                     v1.2.2 修（2026-11-14 实机反馈 2 号）：状态文字水平居中（HorizontalAlignment 在 CellTextStatus 样式里）。 -->
                                 <DataGridTemplateColumn Header="{DynamicResource s.ColStatus}" Width="76" MinWidth="76" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>

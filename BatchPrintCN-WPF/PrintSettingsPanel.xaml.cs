@@ -64,7 +64,7 @@ namespace BatchPrintCN
             LoadState();
             UpdatePreview();
             RefreshTemplateList(null);
-            EffectiveText.Text = L("s.PsEffective") + _opt.Summary();
+            EffectiveText.Text = L("s.PsEffective") + SummaryLocalized(_opt);   // v1.2.2 修：生效摘要走资源键（原来接 Core 中文 Summary()，英文界面漏中文）
             _ready = true;
         }
 
@@ -166,9 +166,12 @@ namespace BatchPrintCN
             }
         }
 
-        private string DuplexText() { return Duplex == DuplexMode.LongEdge ? "双面-长边" : Duplex == DuplexMode.ShortEdge ? "双面-短边" : "单面"; }
-        private string ColorText() { return Color == ColorMode.BlackWhite ? "黑白" : "彩色"; }
-        private string OrientationText() { return Orientation == OrientationMode.Portrait ? "纵向" : Orientation == OrientationMode.Landscape ? "横向" : "自动"; }
+        // v1.2.2 修（2026-11-08 拍板）：预览摘要/生效文案的词全部收进资源键（s.PsSum* 家族，中英成对新增 17 枚；
+        // 奇偶页复用既有 s.PsParityOdd/s.PsParityEven）——原先这里硬编码中文，英文界面下摘要仍是中文。
+        // 拼装结构与词序照旧（Core 侧 PrintOptions.Summary() 的中文日志口径不动，见 SummaryLocalized 注释）。
+        private string DuplexText() { return Duplex == DuplexMode.LongEdge ? L("s.PsSumDuplexLong") : Duplex == DuplexMode.ShortEdge ? L("s.PsSumDuplexShort") : L("s.PsSumSimplex"); }
+        private string ColorText() { return Color == ColorMode.BlackWhite ? L("s.PsSumBw") : L("s.PsSumColor"); }
+        private string OrientationText() { return Orientation == OrientationMode.Portrait ? L("s.PsSumPortrait") : Orientation == OrientationMode.Landscape ? L("s.PsSumLandscape") : L("s.PsSumOrientAuto"); }
 
         public void UpdatePreview()
         {
@@ -176,23 +179,51 @@ namespace BatchPrintCN
             int pp = booklet ? 2 : PagesPerSheet;   // 小册子强制 2 版横排
             string scale = EffectiveScaleText();
             Preview.Update(Duplex, Orientation, Color, PaperNames[PaperIndex], PaperKinds[PaperIndex], scale, pp);
-            string extra = (booklet ? " · 小册子" : "")
-                + (ParityBox.SelectedIndex == 1 ? " · 仅奇数页" : ParityBox.SelectedIndex == 2 ? " · 仅偶数页" : "");
-            SummaryText.Text = "示意 · " + OrientationText() + " · " + ColorText() + " · " + DuplexText() + " · " + PaperNames[PaperIndex]
-                + " · " + scale + (pp > 1 ? " · 每页" + pp + "版" : "") + extra;
+            string extra = (booklet ? " · " + L("s.PsSumBooklet") : "")
+                + (ParityBox.SelectedIndex == 1 ? " · " + L("s.PsParityOdd") : ParityBox.SelectedIndex == 2 ? " · " + L("s.PsParityEven") : "");
+            SummaryText.Text = L("s.PsSumPreview") + " · " + OrientationText() + " · " + ColorText() + " · " + DuplexText() + " · " + PaperNames[PaperIndex]
+                + " · " + scale + (pp > 1 ? " · " + L("s.PsSumNupFmt").Replace("{0}", pp.ToString()) : "") + extra;
         }
 
-        /// <summary>F6：缩放模式展示文案（与 Summary() 同口径）。</summary>
+        /// <summary>F6：缩放模式展示文案（modeIndex＝0 适合页面/1 不缩放/2 缩小/3 拉伸/4 自定义，与 ScaleMode 枚举同序）。
+        /// v1.2.2 修：词走资源键；供预览摘要（按下拉选中项）与生效摘要（按 PrintOptions.EffectiveScale）共用一处。</summary>
+        private string ScaleText(int modeIndex, int percent)
+        {
+            switch (modeIndex)
+            {
+                case 1: return L("s.PsSumScaleNone");
+                case 2: return L("s.PsSumScaleShrink");
+                case 3: return L("s.PsSumScaleStretch");
+                case 4: return L("s.PsSumScalePercentFmt").Replace("{0}", percent.ToString());
+                default: return L("s.PsSumScaleFit");
+            }
+        }
+
         private string EffectiveScaleText()
         {
-            switch (ScaleModeBox.SelectedIndex)
-            {
-                case 1: return "不缩放";
-                case 2: return "缩小适配";
-                case 3: return "拉伸适配";
-                case 4: return ScalePercent + "%";
-                default: return "缩放到合适页面";
-            }
+            return ScaleText(ScaleModeBox.SelectedIndex, ScalePercent);
+        }
+
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：生效摘要行的本地化版——段式与 Core 的 <see cref="PrintOptions.Summary"/>
+        /// 完全一致（双面 / 方向 / 黑彩色 / 纸型 / 缩放 [/ 每页N版｜/ 小册子][/ 奇偶][/ 纸盒]），词全走资源键；
+        /// Core 那份保持中文、只进日志与规划窗，本方法只喂 UI（英文界面不再漏出中文摘要）。
+        /// </summary>
+        private string SummaryLocalized(PrintOptions o)
+        {
+            if (o == null) return "";
+            string duplex = o.Duplex == DuplexMode.LongEdge ? L("s.PsSumDuplexLong")
+                : o.Duplex == DuplexMode.ShortEdge ? L("s.PsSumDuplexShort") : L("s.PsSumSimplex");
+            string orient = o.Orientation == OrientationMode.Portrait ? L("s.PsSumPortrait")
+                : o.Orientation == OrientationMode.Landscape ? L("s.PsSumLandscape") : L("s.PsSumOrientAuto");
+            string color = o.Color == ColorMode.BlackWhite ? L("s.PsSumBw") : L("s.PsSumColor");
+            string scale = ScaleText((int)o.EffectiveScale, o.ScalePercent);
+            string np = o.Booklet ? " / " + L("s.PsSumBooklet")
+                : (o.PagesPerSheet > 1 ? " / " + L("s.PsSumNupFmt").Replace("{0}", o.PagesPerSheet.ToString()) : "");
+            string parity = o.PageParity == PageParityMode.Odd ? " / " + L("s.PsParityOdd")
+                : o.PageParity == PageParityMode.Even ? " / " + L("s.PsParityEven") : "";
+            string src = string.IsNullOrWhiteSpace(o.PaperSourceName) ? "" : " / " + L("s.PsSumSourceFmt").Replace("{0}", o.PaperSourceName);
+            return duplex + " / " + orient + " / " + color + " / " + o.PaperDisplayName + " / " + scale + np + parity + src;
         }
 
         private void OnAnyChecked(object sender, RoutedEventArgs e) { MarkManualEdit(); UpdatePreview(); }

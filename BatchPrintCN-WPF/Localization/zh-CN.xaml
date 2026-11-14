@@ -53,7 +53,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <sys:String x:Key="s.HistoryName">文件名</sys:String>
     <sys:String x:Key="s.HistoryStatus">状态</sys:String>
     <sys:String x:Key="s.HistorySearch">搜索文件名/文件夹</sys:String>
-    <sys:String x:Key="s.HistoryFolder">所在文件夹</sys:String>
+    <sys:String x:Key="s.HistoryFolder">原文件所在路径</sys:String>
+    <!-- v1.2.2 功能（2026-11-14 老板需求）：双击「原文件所在路径」单元格复制完整路径的提示 -->
+    <sys:String x:Key="s.HistoryCopied">已复制完整路径到剪贴板</sys:String>
     <sys:String x:Key="s.HistoryExport">导出 CSV</sys:String>
     <sys:String x:Key="s.HistoryCountFiltered">匹配 {0} / 共 {1} 条</sys:String>
     <sys:String x:Key="s.HistoryExportEmpty">当前筛选无记录可导出。</sys:String>
@@ -278,6 +280,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <!-- 80 号令（V1.2.1）·开机自启动（与关闭行为同一张卡的第二行；标题＋说明各一枚，中英成对） -->
     <sys:String x:Key="s.SettingsAutoStartTitle">开机自启动</sys:String>
     <sys:String x:Key="s.SettingsAutoStartNote">登录 Windows 后自动启动 PrintPile，仅对本机当前用户生效</sys:String>
+    <!-- v1.2.2 功能（2026-11-13 老板需求）：虚拟打印机保存位置——设置卡片三枚＋询问对话框五枚，中英成对 -->
+    <sys:String x:Key="s.SettingsPrintoutTitle">虚拟打印机保存位置</sys:String>
+    <sys:String x:Key="s.SettingsPrintoutNote">打印到「Microsoft Print to PDF」时，生成的 PDF 保存到该文件夹</sys:String>
+    <sys:String x:Key="s.SettingsPrintoutAsk">打印前询问保存位置</sys:String>
+    <sys:String x:Key="s.SaveLocTitle">保存文件至</sys:String>
+    <sys:String x:Key="s.SaveLocNote">本批文件打印生成的文件将保存到下面这个文件夹（每批只问一次）。</sys:String>
+    <sys:String x:Key="s.SaveLocBrowse">浏览…</sys:String>
+    <sys:String x:Key="s.SaveLocDontAsk">每次不询问（以后直接用这个文件夹）</sys:String>
+    <sys:String x:Key="s.SaveLocCancelled">已取消：未选择保存位置，本批不打印</sys:String>
     <sys:String x:Key="s.CloseAsk">每次询问</sys:String>
     <sys:String x:Key="s.CloseMinimize">最小化到托盘</sys:String>
     <sys:String x:Key="s.CloseExit">直接退出</sys:String>
@@ -344,6 +355,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <sys:String x:Key="s.PvLabelOutput">输出</sys:String>
     <sys:String x:Key="s.PvKindPdfFmt">{0}（直接打印）</sys:String>
     <sys:String x:Key="s.PvKindOfficeFmt">{0} → PDF（{1}）</sys:String>
+    <!-- v1.2.2 修（2026-11-14 实机反馈 4 号）：图片直渲三键（信息条类型段／装载等待文案／装载失败文案） -->
+    <sys:String x:Key="s.PvKindImageFmt">{0}（直接渲染，不转 PDF）</sys:String>
+    <sys:String x:Key="s.PvLoadingImage">正在载入图片…</sys:String>
+    <sys:String x:Key="s.PvImageLoadFailedFmt">图片载入失败：{0}</sys:String>
     <sys:String x:Key="s.PvStateNone">未转换</sys:String>
     <sys:String x:Key="s.PvStateConverting">转换中…</sys:String>
     <sys:String x:Key="s.PvStateCached">已转换，缓存</sys:String>
@@ -494,4 +509,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <!-- ===== 73 号令（V1.2.0，D-36 推翻 D-24）：全面 free & open（许可证改 GNU GPLv3）——码制、验签、
          限时体验与功能上限整体拆除，相关 41 枚键中英成对下架；下面 6 枚是新的「功能一览」与开源声明。 ===== -->
     <sys:String x:Key="s.AboutLicenseLine">本软件以 GNU GPLv3 开源发布，全部功能免费开放；许可全文见程序目录 licenses\LICENSE。</sys:String>
+    <!-- ===== v1.2.2 修（2026-11-08 拍板）：打印设置弹窗的预览摘要/生效文案收进资源键（原硬编码中文，17 枚，中英成对）；
+         奇偶页两词复用既有 s.PsParityOdd/s.PsParityEven 不另立键。词序拼装结构照旧，见 PrintSettingsPanel。 ===== -->
+    <sys:String x:Key="s.PsSumDuplexLong">双面-长边</sys:String>
+    <sys:String x:Key="s.PsSumDuplexShort">双面-短边</sys:String>
+    <sys:String x:Key="s.PsSumSimplex">单面</sys:String>
+    <sys:String x:Key="s.PsSumColor">彩色</sys:String>
+    <sys:String x:Key="s.PsSumBw">黑白</sys:String>
+    <sys:String x:Key="s.PsSumPortrait">纵向</sys:String>
+    <sys:String x:Key="s.PsSumLandscape">横向</sys:String>
+    <sys:String x:Key="s.PsSumOrientAuto">自动</sys:String>
+    <sys:String x:Key="s.PsSumScaleFit">缩放到合适页面</sys:String>
+    <sys:String x:Key="s.PsSumScaleNone">不缩放</sys:String>
+    <sys:String x:Key="s.PsSumScaleShrink">缩小适配</sys:String>
+    <sys:String x:Key="s.PsSumScaleStretch">拉伸适配</sys:String>
+    <sys:String x:Key="s.PsSumScalePercentFmt">{0}%</sys:String>
+    <sys:String x:Key="s.PsSumNupFmt">每页{0}版</sys:String>
+    <sys:String x:Key="s.PsSumBooklet">小册子</sys:String>
+    <sys:String x:Key="s.PsSumPreview">示意</sys:String>
+    <sys:String x:Key="s.PsSumSourceFmt">纸盒:{0}</sys:String>
 </ResourceDictionary>

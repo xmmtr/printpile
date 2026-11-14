@@ -250,10 +250,12 @@ namespace BatchPrintCN
             // 52 号令·步骤 4：ThemeCard 是 Border（无 Header 属性），标题在自身可视树里——豁免空卡判定
             var empty = cards.Where(c => !(c is Border) && string.IsNullOrWhiteSpace(HeaderText(c))).ToList();
             double topGap = cards.OfType<FrameworkElement>().Any() ? 0 : 0;
-            sb.AppendLine("— 修D 卡片数=" + cards.Count + "（应 5）空卡片=" + empty.Count + " 首张顶部间距="
+            sb.AppendLine("— 修D 卡片数=" + cards.Count + "（应 6）空卡片=" + empty.Count + " 首张顶部间距="
                 + (cards.FirstOrDefault() == null ? "-" : ((FrameworkElement)cards.First()).Margin.Top.ToString()));
-            Check(bad, "V1.0.0·52 号改判·修D 布局收紧：恰好五张卡片（主题卡以 Border 形态接位）、无空卡片、首张不留顶部间距",
-                cards.Count == 5 && empty.Count == 0 && (cards.First() as FrameworkElement).Margin.Top == 0);
+            // v1.2.2 功能（2026-11-13 老板需求）就地改判：5 → **6 张卡**——新增「虚拟打印机保存位置」卡
+            //（默认文件夹＋打印前询问开关），主题卡仍以 Border 形态接位；空卡与首张间距判据不变。
+            Check(bad, "V1.0.0·52 号改判·修D 布局收紧（v1.2.2 改判 5→6 张：新增虚拟打印机保存位置卡）：恰好六张卡片（主题卡以 Border 形态接位）、无空卡片、首张不留顶部间距",
+                cards.Count == 6 && empty.Count == 0 && (cards.First() as FrameworkElement).Margin.Top == 0);
 
             foreach (var dict in new[] { "Localization/zh-CN.xaml", "Localization/en-US.xaml" })
             {
@@ -414,7 +416,7 @@ namespace BatchPrintCN
                   + "修B 单实例：锁名/事件名不带 Global\\ 且按 exe 全路径派生（不同目录副本互不阻塞）、同进程二次抢锁必失败、"
                   + "真子进程探针 --instance-probe 实测持锁时退出码 3／释放后 0、NotifyExisting 唤醒现有实例回调、"
                   + "App.RestoreMainWindow 对托盘态与最小化态都还原；"
-                  + "修D 设置页：11 个退役控件全消失、保留 6 个一个没丢、恰好五张卡无空卡且首张无顶部间距、四组资源键中英各 0 枚残留、"
+                  + "修D 设置页：11 个退役控件全消失、保留 6 个一个没丢、恰好六张卡无空卡且首张无顶部间距（v1.2.2 改判 5→6：新增虚拟打印机保存位置卡）、四组资源键中英各 0 枚残留、"
                   + "老配置五枚键读取即忽略（引擎自动＋目录默认）且再保存后自然消失、auto 引擎换算与打印通道一致；"
                   + "修E 关于页（62 号·B 起改钉新品牌）：可见文字里品牌串恰一处、旧自称 0 条、版本号只留两处（构建行＋检查更新说明）、首屏第一张卡即检查更新、"
                   + "s.AboutEngine 已删＋两枚新键成对、日志行保留（唯一入口，口径已报备）；逐条数字见 V49第二批定位.txt）"

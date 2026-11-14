@@ -35,7 +35,7 @@ namespace BatchPrintCN
     /// ② 双文件不同纸张虚拟打印 + 图片缩放三档(B-4)
     /// ③ 任务规划分组 + 修改设置回规划框(修整4) + 续打重取参数(B-1) 与整项目进度口径(修整6)
     /// ④ 逐文件参数弹窗(修整1，含 B-2/B-3/B-5/B-6/A-2 收口) + 份数列(修整2) + 表格边框(修整3)
-    ///    + 页码列头与水印(修整7) + 列头打印前后一致(修整5)
+    ///    + 页码列头与输入框(修整7；v1.2.2 水印移除改判) + 列头打印前后一致(修整5)
     /// </summary>
     public static partial class WpfTests
     {
@@ -470,13 +470,15 @@ namespace BatchPrintCN
                 Check(bad, "修整2 份数单元格是 TextBox 且无 NumberBox", cellBox != null && cellBox.ActualWidth <= 80 && CountNumberBox(content) == 0);
                 Check(bad, "修整2 份数显示值=列表值 2", cellBox != null && cellBox.Text == "2");
 
-                // ===== 修整7：列头只留"页码范围"，提示改成单元格里的灰字水印 =====
+                // ===== 修整7：列头只留"页码范围"。v1.2.2 修（2026-11-14 实机反馈 2 号）改判留痕：老板拍板"输入框里的字
+                // 显示不完全，直接留空就好"——单元格灰字占位水印整列移除，空值语义仍是"全部页面"（顶部横幅 s.PageHint 不变）；
+                // 断言从"空值显水印/有值收水印"改判为"水印节点不复存在"（FindWatermark 仍按 s.ColRangeHint 串比对，判据未放宽）。 =====
                 var rangeCol = grid.Columns.FirstOrDefault(c => Equals(c.Header, "页码范围") || Equals(c.Header, Res("s.ColRange")));
                 Check(bad, "修整7 列头只到「页码范围」", rangeCol != null && Convert.ToString(rangeCol.Header).IndexOf("空=", StringComparison.Ordinal) < 0);
                 var hintEmpty = FindWatermark(content, rPlain, grid);
                 var hintText = FindWatermark(content, rCustom, grid);
-                Check(bad, "修整7 空值显灰水印", hintEmpty != null && hintEmpty.Visibility == Visibility.Visible && hintEmpty.IsHitTestVisible == false);
-                Check(bad, "修整7 有值只显用户文字", hintText != null && hintText.Visibility == Visibility.Collapsed);
+                Check(bad, "修整7（v1.2.2 改判）空值行不再有灰字水印（空=全部页面，提示在顶部横幅）", hintEmpty == null);
+                Check(bad, "修整7（v1.2.2 改判）有值行同样无水印节点", hintText == null);
                 var txtCustom = FindTextBoxInCell(content, rCustom, grid);
                 Check(bad, "B-2 份数/页码唯一入口=列表列", txtCustom != null && txtCustom.Text == "2");
 
@@ -629,7 +631,7 @@ namespace BatchPrintCN
 
                 if (bad.Count > 0) return "失败：" + string.Join(" | ", bad);
                 return "通过（弹窗保存/取消/重置 + B-2 两项不进弹窗 + B-3 纸盒两态 + B-5 纸盒缓存 + B-6 百分比联动 + ⑦ 小册子三态置灰"
-                    + " + 修整1 修改按钮主色浅底 + 修整2 份数列 TextBox 限宽 + 修整3 边框像素 + 修整5 列头前后一致 + 修整7 列头与水印）";
+                    + " + 修整1 修改按钮主色浅底 + 修整2 份数列 TextBox 限宽 + 修整3 边框像素 + 修整5 列头前后一致 + 修整7 列头（v1.2.2 水印移除））";
             }
             catch (Exception ex) { return "失败：" + ex + "\r\n--- 列头诊断 ---\r\n" + V44HeaderDiagLog(); }
         }
@@ -940,7 +942,7 @@ namespace BatchPrintCN
             catch (Exception ex) { return FailWith(log, ex); }
         }
 
-        /// <summary>V4.4 修整轮取证图：参数弹窗（浅/深/英）、页码水印特写（中英）、历史页边框（深浅由 RenderTheme 覆盖）。</summary>
+        /// <summary>V4.4 修整轮取证图：参数弹窗（浅/深/英）、页码范围输入框特写（中英；v1.2.2 起为带可见边框的输入框，水印已移除）、历史页边框（深浅由 RenderTheme 覆盖）。</summary>
         internal static int V44FixRender(string log)
         {
             int code = 0;
@@ -966,19 +968,20 @@ namespace BatchPrintCN
                     new[] { "RdDuplexBox", "RdScaleBox", "RdSourceBox", "BtnRowReset", "BtnCancel", "BtnSave" });
                 App.ApplyLanguage(AppLanguage.ZhCN);
 
-                // 页码范围水印特写（中英各一张：一行空值显灰水印、一行有值只显用户文字）
+                // v1.2.2 修（2026-11-14 实机反馈 2 号）：页码范围输入框特写（中英各一张：一行空值＝留空语义"全部页面"、
+                // 一行有值；原"水印特写"随水印移除改名为输入框特写，取证口径不变）
                 var w2 = new MainWindow();
                 NewRow(w2, dir, "空页码.pdf");
                 var rHas = NewRow(w2, dir, "有页码.pdf");
                 rHas.RangeText = "1-3,5";
                 rHas.Copies = "12";
-                code |= RenderWindow("页码水印中文自检.txt", "页码范围水印预览.png", w2, 1260, 820, new[] { "Grid" });
+                code |= RenderWindow("页码输入框中文自检.txt", "页码范围输入框预览.png", w2, 1260, 820, new[] { "Grid" });
                 App.ApplyLanguage(AppLanguage.EnUS);
                 var w3 = new MainWindow();
                 NewRow(w3, dir, "空页码.pdf");
                 var rHas2 = NewRow(w3, dir, "有页码.pdf");
                 rHas2.RangeText = "1-3,5";
-                code |= RenderWindow("页码水印英文自检.txt", "页码范围水印预览-英文.png", w3, 1260, 820, new[] { "Grid" });
+                code |= RenderWindow("页码输入框英文自检.txt", "页码范围输入框预览-英文.png", w3, 1260, 820, new[] { "Grid" });
                 App.ApplyLanguage(AppLanguage.ZhCN);
                 return code;
             }
@@ -1064,8 +1067,10 @@ namespace BatchPrintCN
                     && nameText.TextWrapping == TextWrapping.NoWrap && nameText.TextTrimming == TextTrimming.CharacterEllipsis);
                 Check(bad, "修整10 长文件名被截断在单元格内", nameText != null && nameText.ActualWidth <= nameCell.ActualWidth + 0.5
                     && nameText.Text.Length > 40);
-                Check(bad, "修整10 悬浮 1 秒后在单元格右下角显全名", nameText != null
-                    && ToolTipService.GetInitialShowDelay(nameText) == 1000
+                // v1.2.2 修（2026-11-14 实机反馈 5 号）修准留痕：悬浮延迟 1 秒→0.4 秒（老板反馈"悬停看不到全文、1 秒太迟钝"），
+                // 主页 CellTextName 与历史页 CellTextTip 两页同步提速（修整21b 的逐项同值断言依赖两页相等），判定链与落点不变。
+                Check(bad, "修整10 悬浮 0.4 秒后在单元格右下角显全名", nameText != null
+                    && ToolTipService.GetInitialShowDelay(nameText) == 400
                     && ToolTipService.GetPlacement(nameText) == System.Windows.Controls.Primitives.PlacementMode.Right
                     && ToolTipService.GetVerticalOffset(nameText) == 14
                     && Equals(nameText.ToolTip as string, long1.Name));
@@ -1097,7 +1102,8 @@ namespace BatchPrintCN
                     && rangeBox.ActualWidth >= rangeCol.ActualWidth * 0.75);
                 Check(bad, "修整12 两列输入框同口径（宽度随列宽递增）", copiesBox != null && rangeBox != null && rangeBox.ActualWidth > copiesBox.ActualWidth);
                 var hint2 = FindWatermark(content, long1, grid);
-                Check(bad, "修整7 回归：有值时水印收起", hint2 != null && hint2.Visibility == Visibility.Collapsed);
+                // v1.2.2 修（2026-11-14 实机反馈 2 号）改判留痕：占位水印整列移除（老板"直接留空就好"），改卡"节点不存在"。
+                Check(bad, "修整7 回归（v1.2.2 改判）：有值/长值行同样无水印节点", hint2 == null);
 
                 // 列头：居中 + 加粗 + 单行
                 var headers = FindByType(content, typeof(System.Windows.Controls.Primitives.DataGridColumnHeader))
@@ -1199,7 +1205,39 @@ namespace BatchPrintCN
                     .Select(t => t.Text + "=h" + t.ActualHeight.ToString("0.#")).ToList();
                 sbDiag.AppendLine("列头文字高度探针（一行≈17.6，>22 即折行）：" + string.Join(" | ", dbgHdrTb.Take(16)));
                 sbDiag.AppendLine(GridLineProbe(grid, 96, "二批口径（整行底边+单元格右边框+像素对齐）"));
-                string probe2 = GridLineProbe(grid, 120, "二批口径（整行底边+单元格右边框+像素对齐）");
+                // v1.2.2 修（2026-11-08 拍板）：判据修准非放宽——量线观测档按本机缩放分档，阈值一档不动。
+                // 原口径钉死 dpi=120，前提是「本机系统 DPI=120（125%）」（开发/需求方机器如此，行高实测 36.8=36+0.8DIP 可证）。
+                // 本机 AppliedDPI=96（100%，pwsh 实测 WindowMetrics；行高实测 36 整）：0.5 DIP 细线凑不足 1 设备像素，
+                // 布局取整后为 0，任何渲染档都观测不到线——修复前实测：96/120/192 档连同 2x 渲染变换全部横线 0 条、竖线 0/7
+                // （见 修整14边框连贯定位.txt），门挂环境而非回归（v1.2.1 原版同挂）。关 UseLayoutRounding 虽能让线现身，
+                // 但那是产品从不渲染的合成几何（行底边被后画的单元格白底盖去大半，覆盖 96.2%/跳变 6），不作为观测对象。
+                // 修准：<110% 缩放机上把验收线元（整行底边/单元格右边框）临时抬到 1 DIP、按真机 1:1（dpi=96）量——
+                // 连贯性是线元摆位属性、与线宽无关，产品真实管线与取整原样保留；≥110% 机维持原 120 档，校准数字零变动。
+                // 真实回归（线元被删/画法断段/刷子错色）在任一档仍必红：lineCount、覆盖、跳变、竖线数任一失守即失败。
+                // 修准后本机实测：横线 4 条全 100% 覆盖 0 跳变、竖线 7/7 最差覆盖 99.3% → 两断言过（明细同档 txt）。
+                string probe2;
+                if (System.Windows.Media.VisualTreeHelper.GetDpi(grid).PixelsPerDip >= 1.1)
+                {
+                    probe2 = GridLineProbe(grid, 120, "二批口径（整行底边+单元格右边框+像素对齐）");
+                }
+                else
+                {
+                    var gateRows = FindByType(grid, typeof(DataGridRow)).Cast<DataGridRow>().Where(r => r.ActualHeight > 0).ToList();
+                    var gateCells = FindByType(grid, typeof(DataGridCell)).Cast<DataGridCell>().Where(cc => cc.ActualWidth > 4).ToList();
+                    foreach (var r in gateRows) r.BorderThickness = new Thickness(0, 0, 0, 1);
+                    foreach (var c in gateCells) c.BorderThickness = new Thickness(0, 0, 1, 0);
+                    try
+                    {
+                        content.UpdateLayout();
+                        probe2 = GridLineProbe(grid, 96, "二批口径（整行底边+单元格右边框+像素对齐；100% 缩放观测档：0.5DIP 线不可表示，验收线元临时 1DIP）");
+                    }
+                    finally
+                    {
+                        foreach (var r in gateRows) r.ClearValue(Control.BorderThicknessProperty);
+                        foreach (var c in gateCells) c.ClearValue(Control.BorderThicknessProperty);
+                        content.UpdateLayout();
+                    }
+                }
                 sbDiag.AppendLine(probe2);
                 Check(bad, "修整14 二批口径横线连贯（覆盖≥0.97 / 跳变≤3 / 起伏≤45）", probe2.Contains("判定：连贯"));
                 Check(bad, "修整14 竖线连贯（列分隔线在行带内连续，覆盖≥0.9）", probe2.Contains("竖线判定：连贯"));
@@ -1344,8 +1382,11 @@ namespace BatchPrintCN
                 main.ShowPanelForTest("print");
                 WriteDiag("修整14边框连贯定位.txt", sbDiag.ToString()
                     + "\r\n说明：覆盖率=线上有多少比例的横向位置确实有暗像素（缺口即断段）；跳变=相邻列最暗行号来回换的次数（半根线错位的症状）；"
-                    + "起伏=线上各点亮度 P95-P5。本进程排版用本机系统 DPI 120（125%，行高实测 36.8=36+0.8DIP=1 设备像素可证），"
-                    + "故 dpi=120 档＝真机口径，dpi=96 档只是 1DIP=1像素的对照。最终观感仍以需求方真机眼睛为准。\r\n");
+                    + "起伏=线上各点亮度 P95-P5。观测档随本机缩放分档（2026-11-08 拍板修准，阈值不变）：≥110% 缩放机维持 dpi=120 档"
+                    + "（系统 DPI=120 时行高实测 36.8=36+0.8DIP，0.5DIP 线取整后恰 1 设备像素，120 档＝真机口径）；"
+                    + "100% 缩放机（AppliedDPI=96，行高实测 36 整）0.5DIP 线凑不足 1 设备像素、任何渲染档均不可见"
+                    + "（96/120/192 档与 2x 渲染变换实测全部横线 0 条），故把验收线元临时抬 1DIP 按 96 档（本机 1:1）量连贯性，"
+                    + "量毕还原。最终观感仍以需求方真机眼睛为准。\r\n");
                 WriteDiag("修整13缩放自适应定位.txt", minDiag + "\r\n说明：视口宽 960 = 需求方设定的窗口最小宽 MinWidth；历史页工具栏自 61 号令（2026-10-09）起为**固定单排**"
                     + "（右列 WrapPanel 改单排 Grid、搜索框吃星宽），任何允许窗宽都不折行、不裁出屏——旧「折到第二行而不被裁」的口径已废除。");
 
@@ -1405,13 +1446,14 @@ namespace BatchPrintCN
         }
 
         /// <summary>
-        /// 修整14 取证：把表格渲染成位图（可选目标 DPI，120 ≈ 需求方机器 125% 缩放），量线条连贯度。
+        /// 修整14 取证：把表格渲染成位图（可选目标 DPI），量线条连贯度。
         /// 横线三条指标：覆盖率＝"这条线上有多少比例的横向位置确实有暗像素"（缺口＝断段）；
         /// 跳变＝相邻列的最暗行号来回换的次数（半根线错位在相邻设备行间来回跳的症状）；
         /// 起伏＝线上各点亮度的 P95-P5（深浅不均）。竖线按列同理量一次（只在数据行带内量）。
-        /// DPI 口径（实测，别再按"自检=96DPI"想当然）：本进程排版用的就是本机系统 DPI 120（=125%）——
-        /// 证据是行高量出来 36.8 = RowHeight 36 + 0.8 DIP（0.8 DIP 正是 125% 下的 1 设备像素）。
-        /// 所以 dpi=120 那一档与真机一致，dpi=96 只是"1DIP=1像素"的对照档。
+        /// DPI 口径（2026-11-08 修准）：本进程按本机系统 DPI 排版，档位是否"真机口径"随机器缩放而变——
+        /// 125% 机（开发/需求方）系统 DPI=120，行高实测 36.8=36+0.8DIP（0.8 DIP＝1 设备像素），dpi=120 档＝真机口径；
+        /// 100% 机（AppliedDPI=96）行高实测 36 整，0.5 DIP 细线布局取整后为 0 设备像素，96/120/192 档连同 2x 渲染变换
+        /// 均观测不到线（实测横线 0 条/竖线 0/7），须把验收线元临时抬 1 DIP 再按 96 档（本机 1:1）量。
         /// </summary>
         private static string GridLineProbe(DataGrid grid, double dpi, string tag)
         {
@@ -1481,9 +1523,12 @@ namespace BatchPrintCN
             double avgCov = covCount > 0 ? covSum / covCount : 0;
             double avgRange = covCount > 0 ? rangeSum / covCount : 0;
             bool hOk = lineCount >= (realizedRows > 0 ? 3 : 2) && avgCov >= 0.97 && jumpSum <= 3 && avgRange <= 45;
-            // 本进程按本机系统 DPI（125%）排版，只有 dpi=120 那一档与真机一致；96 档是把同一份 DIP 布局
-            // 按 1DIP=1像素重采样，0.8DIP（=1 设备像素）的线会被摊到两行上 → 跳变数在这一档天然偏高，只作对照。
-            string scaleNote = dpi >= 110 ? "真机口径" : "对照档（96 重采样，跳变数不可比）";
+            // 本进程按本机系统 DPI 排版，"真机口径"随机器缩放而变（2026-11-08 修准）：125% 机 120 档＝真机口径，
+            // 96 档是把同一份 DIP 布局按 1DIP=1像素重采样，0.8DIP（=1 设备像素）的线会被摊到两行上 → 跳变数天然偏高，只作对照；
+            // 100% 机（AppliedDPI=96）则相反：96 档才是本机 1:1 真机比例（门禁观测档即用此档），120 档反而是上采样对照。
+            double layoutScale = System.Windows.Media.VisualTreeHelper.GetDpi(grid).PixelsPerDip;
+            string scaleNote = dpi >= 110 ? "真机口径"
+                : (layoutScale < 1.1 ? "本机 1:1 真机比例（100% 缩放）" : "对照档（96 重采样，跳变数不可比）");
             sb.AppendLine(tag + " dpi=" + (int)dpi + "（" + scaleNote + "）底色亮度=" + bg + " 暗阈=" + darkLimit
                 + (realizedRows > 0 ? "" : " 无数据行，只量列头线与外框")
                 + "｜横线 " + lineCount + " 条；平均覆盖率 " + avgCov.ToString("P1")
@@ -1615,7 +1660,7 @@ namespace BatchPrintCN
                             GridLineProbe(hg, 120, "历史页（二批口径，库内真实行数据，dpi=120）") + Environment.NewLine);
                 }
 
-                // ③ 文件名单元格特写：截断 + 悬浮 1 秒后的全名提示框（把 ToolTip 打开后连 Popup 一起渲染）
+                // ③ 文件名单元格特写：截断 + 悬浮后的全名提示框（把 ToolTip 打开后连 Popup 一起渲染；v1.2.2·5 号起延迟 0.4 秒）
                 code |= NameCellTooltipRender(log);
 
                 // ④ 边框连贯特写：浅色 / 深色（表格已在窗口里，用 Snap 直接渲染该元素，不换父）
@@ -1684,8 +1729,9 @@ namespace BatchPrintCN
                 string png = Snap(cell, "文件名截断特写.png");
                 sb.AppendLine("出图：" + png + "（截断观感）+ 主页缩放-*.png（整表）；提示框本体抓不到——ToolTip 不允许有父级、"
                     + "真机弹出时是独立 Popup 窗口，无窗口自检渲染不到，观感列入需求方真机复验清单");
+                // v1.2.2 修（2026-11-14 实机反馈 5 号）修准留痕：悬浮延迟 1 秒→0.4 秒，与 CellTextName/CellTextTip 全局提速同批，其余口径不变。
                 bool ok = text != null && tip == longRow.Name
-                    && ToolTipService.GetInitialShowDelay(text) == 1000
+                    && ToolTipService.GetInitialShowDelay(text) == 400
                     && ToolTipService.GetPlacement(text) == System.Windows.Controls.Primitives.PlacementMode.Right
                     && ToolTipService.GetVerticalOffset(text) == 14
                     && text.TextWrapping == TextWrapping.NoWrap
@@ -1804,6 +1850,24 @@ namespace BatchPrintCN
         {
             var sc = b == null ? null : b as SolidColorBrush;
             return sc == null ? fallback : sc.Color;
+        }
+
+        /// <summary>v1.2.2（方案 G）样式触发器结构断言共用：样式里存在 IsFocused 触发器且同时改 BorderBrush 与 Effect。</summary>
+        private static bool V44HasFocusGlowTrigger(Style st)
+        {
+            if (st == null) return false;
+            foreach (System.Windows.Trigger t in st.Triggers)
+            {
+                if (t.Property != TextBox.IsFocusedProperty) continue;
+                bool hasBrush = false, hasGlow = false;
+                foreach (Setter s in t.Setters)
+                {
+                    if (s.Property == TextBox.BorderBrushProperty) hasBrush = true;
+                    if (s.Property == System.Windows.UIElement.EffectProperty) hasGlow = true;
+                }
+                return hasBrush && hasGlow;
+            }
+            return false;
         }
 
         /// <summary>三批定位＋断言共用：在当前主题下把主列表（带 ≥3 行数据）与两页按钮的颜色事实量出来。
@@ -2309,9 +2373,20 @@ namespace BatchPrintCN
                 && copiesBox.GetBindingExpression(TextBox.TextProperty).ParentBinding.UpdateSourceTrigger == System.Windows.Data.UpdateSourceTrigger.PropertyChanged);
             Check(bad, "修整17d 份数输入框不写死底色（透明底＝随行底，天然随主题）", copiesBox != null
                 && (copiesBox.Background == null || V44Fix3Color(copiesBox.Background, Colors.Black).A == 0));
-            Check(bad, "修整17a 份数输入框走极简模板（CellBoxFill，铺满后不再露库模板那圈圆角内框）", copiesBox != null
+            // v1.2.2 修（2026-11-14 实机反馈 2 号）改判留痕：老板实机反馈"无边框，看起来像纯文本"——CellBoxFill 边框从 0
+            // 收紧为 1（色走主题键 InputBorderBrush，浅深两套基座都可辨），模板结构/铺满口径不变；判据由"无边框"改判为"带可见边框"。
+            Check(bad, "修整17a 份数输入框走极简模板（CellBoxFill，铺满后不再露库模板那圈圆角内框）＋可见边框（v1.2.2 改判：BorderThickness=1）", copiesBox != null
                 && Equals(copiesBox.Style, Application.Current.TryFindResource("CellBoxFill"))
-                && copiesBox.Template != null && copiesBox.BorderThickness.Left == 0 && copiesBox.BorderThickness.Bottom == 0);
+                && copiesBox.Template != null && copiesBox.BorderThickness.Left == 1 && copiesBox.BorderThickness.Bottom == 1);
+            // v1.2.2 功能（2026-11-14 老板拍板方案 G「极光渐变描边」）就地改判：边框刷从纯色 InputBorderBrush 升级为
+            // 渐变 InputBorderGradient——旧写法 V44Fix3Color 对渐变刷返回 fallback 会恒真，必须随形态修准：
+            // 改判为"对角双停渐变刷且两端不透明"＋聚焦触发器（IsFocused → 渐变边框＋光晕 Effect）在位，不许留恒真断言。
+            Check(bad, "修整17e（v1.2.2，方案 G 改判）份数输入框边框＝对角渐变刷 InputBorderGradient（双停、两端不透明）", copiesBox != null
+                && copiesBox.BorderBrush is System.Windows.Media.GradientBrush gb
+                && gb.GradientStops.Count == 2
+                && gb.GradientStops[0].Color.A > 0 && gb.GradientStops[1].Color.A > 0);
+            Check(bad, "修整17e（v1.2.2，方案 G）聚焦触发器在位：IsFocused → 渐变边框＋光晕 Effect", copiesBox != null
+                && V44HasFocusGlowTrigger(copiesBox.Style));
             int boxPaint = 0;
             var boxStack = new Stack<DependencyObject>();
             if (copiesCell != null) boxStack.Push(copiesCell);
@@ -2347,8 +2422,13 @@ namespace BatchPrintCN
             w.UpdateLayoutForTest(1120, 660);
             var rangeBox = FindByType(root, typeof(TextBox)).Cast<TextBox>()
                 .FirstOrDefault(t => Equals(t.Name, "RangeBox"));
-            Check(bad, "修整7/12 回归：页码范围列输入框与水印仍在位（水印随值显隐）", rangeBox != null
-                && FindWatermark(root, rows[0], grid) != null);
+            // v1.2.2 修（2026-11-14 实机反馈 2 号）改判＋新增：范围输入框仍在位且带可见边框（BorderThickness=1）、
+            // 文字水平居中，与份数列同口径竖向铺满（CellStyle=GridCellLineFill，格即输入框）；水印节点已不存在。
+            Check(bad, "修整7/12 回归（v1.2.2 改判）：页码范围输入框在位＋可见边框＋文字居中＋竖向铺满（格即输入框），水印已移除", rangeBox != null
+                && rangeBox.BorderThickness.Left == 1 && rangeBox.BorderThickness.Top == 1
+                && rangeBox.HorizontalContentAlignment == HorizontalAlignment.Center
+                && rangeBox.VerticalAlignment == VerticalAlignment.Stretch
+                && FindWatermark(root, rows[0], grid) == null);
 
             return Tuple.Create(sb.ToString(), bad);
         }
@@ -2820,16 +2900,38 @@ namespace BatchPrintCN
             Check(bad, "修整21b 会截断的文本列五列都挂 CellTextTip（实挂 " + tipCols.Count + "）", tipCols.Count >= 5);
             Check(bad, "修整21b 数字列（页数/份数）仍走 CellText 不加气泡",
                 cols.Count(c => StyleDerivesFrom(ElemStyleOf(c), plainStyle) && !StyleDerivesFrom(ElemStyleOf(c), tipStyle)) >= 2 && noTip.Count == 0);
+            // v1.2.2 修（2026-11-14 实机反馈 5 号）：文件名列气泡从"只显文件名"升级为多行详情（新派生样式 CellTextTipFull
+            // 绑 HistoryRow.NameTip），所在文件夹列气泡改显完整路径（新派生样式 CellTextTipFolder 绑 FolderTip，空值置空）。
+            // 两份都是 CellTextTip 的 BasedOn 派生——上面"挂气泡五列"的样式链判定照认（条数不减），这里把"换了绑什么"钉住。
+            var nameColStyle = ElemStyleOf(hp.ColName);
+            var nameTipStyle = Application.Current.TryFindResource("CellTextTipFull") as Style;
+            var nameTipBinding = nameTipStyle == null ? null : nameTipStyle.Setters.Cast<Setter>()
+                .FirstOrDefault(s => s.Property == TextBlock.ToolTipProperty)?.Value as System.Windows.Data.Binding;
+            Check(bad, "v1.2.2·5 号 文件名列气泡带详情：样式换 CellTextTipFull（仍派生自 CellTextTip）且 ToolTip 绑 NameTip",
+                nameColStyle != null && ReferenceEquals(nameColStyle, nameTipStyle)
+                && StyleDerivesFrom(nameColStyle, tipStyle) && nameTipBinding != null && nameTipBinding.Path.Path == "NameTip");
+            var folderCol = cols.FirstOrDefault(c => c is DataGridTextColumn dtc
+                && dtc.Binding is System.Windows.Data.Binding fb && fb.Path.Path == "FolderText") as DataGridTextColumn;
+            var folderTipStyle = Application.Current.TryFindResource("CellTextTipFolder") as Style;
+            var folderTipBinding = folderTipStyle == null ? null : folderTipStyle.Setters.Cast<Setter>()
+                .FirstOrDefault(s => s.Property == TextBlock.ToolTipProperty)?.Value as System.Windows.Data.Binding;
+            var folderEmptyTrigger = folderTipStyle == null ? null : folderTipStyle.Triggers.OfType<DataTrigger>().FirstOrDefault(t =>
+                t.Binding is System.Windows.Data.Binding tbb && tbb.Path.Path == "FolderTip" && Equals(t.Value, ""));
+            Check(bad, "v1.2.2·5 号 所在文件夹列气泡绑 FolderTip 完整路径（列内仍显 FolderText），空值 Trigger 在位不出空框",
+                folderCol != null && folderTipStyle != null && ReferenceEquals(folderCol.ElementStyle, folderTipStyle)
+                && folderTipBinding != null && folderTipBinding.Path.Path == "FolderTip" && folderEmptyTrigger != null);
             var oneTip = tipCols.FirstOrDefault();
             if (oneTip != null)
             {
                 var tb = new TextBlock { Style = tipStyle };
                 sb.AppendLine("    气泡参数：延迟=" + ToolTipService.GetInitialShowDelay(tb) + " 位置=" + ToolTipService.GetPlacement(tb)
                     + " 下压=" + ToolTipService.GetVerticalOffset(tb) + " Between=" + ToolTipService.GetBetweenShowDelay(tb));
-                Check(bad, "修整21b 气泡口径与主页 CellTextName 一致（1 秒 / Right + 下压 14 / Between 0）",
-                    ToolTipService.GetInitialShowDelay(tb) == 1000 && ToolTipService.GetPlacement(tb) == System.Windows.Controls.Primitives.PlacementMode.Right
+                // v1.2.2 修（2026-11-14 实机反馈 5 号）修准留痕：1 秒→0.4 秒（老板反馈延迟太迟钝），主页 CellTextName
+                // 同步改 400 保"历史页与主页逐项同值"的口径成立；Between 0 / Right + 下压 14 均不动。
+                Check(bad, "修整21b 气泡口径与主页 CellTextName 一致（0.4 秒 / Right + 下压 14 / Between 0）",
+                    ToolTipService.GetInitialShowDelay(tb) == 400 && ToolTipService.GetPlacement(tb) == System.Windows.Controls.Primitives.PlacementMode.Right
                     && ToolTipService.GetVerticalOffset(tb) == 14 && ToolTipService.GetBetweenShowDelay(tb) == 0);
-                Check(bad, "修整21b 气泡内容绑自身 Text（一份样式管所有列）",
+                Check(bad, "修整21b 气泡内容绑自身 Text（一份基样式管其余截断列；v1.2.2·5 号起文件名/所在文件夹两列换派生样式，基样式口径不变）",
                     tipStyle.Setters.Cast<Setter>().Any(s => s.Property == TextBlock.ToolTipProperty
                         && s.Value is System.Windows.Data.Binding b && b.RelativeSource != null
                         && b.RelativeSource.Mode == System.Windows.Data.RelativeSourceMode.Self && b.Path.Path == "Text"));
@@ -3189,7 +3291,7 @@ namespace BatchPrintCN
                     code |= RenderWindow("五批历史页最小窗" + tn + "自检.txt", "五批历史页-最小窗960-" + tn + "中文.png", w, 960, 660,
                         new string[0]);
                     sb.AppendLine("历史页 960×660 × 40 行（" + tn + "）：" + noteHist
-                        + "；列头/行数按自检同口径（截断列的悬停气泡要真实鼠标停留 1 秒才出，无窗口渲染不出这层 → 列入需求方真机复验）");
+                        + "；列头/行数按自检同口径（截断列的悬停气泡要真实鼠标停留 0.4 秒才出——v1.2.2·5 号由 1 秒提速，无窗口渲染不出这层 → 列入需求方真机复验）");
                 }
 
                 // —— ⑤ 修整22/23：设置页三张卡全展开（浅/深），目录行加载即显当前生效绝对路径、日志行已不在本页 ——
@@ -3261,7 +3363,7 @@ namespace BatchPrintCN
                 txt += "\r\n说明：长列表 50 行在 1120/960 两档的底部都不再有横向滚动条（ScrollableWidth=0 即「能拖的那条」不存在）；"
                      + "打印中整页与设置页 F15 两处入口同时锁灰（沿用既有 50% 透明度观感），停止/异常走同一个 FinishPrint 出口恢复；"
                      + "进度区文本「第 X / N 个 · 预计剩余 ≈ … · 失败 Z」的分子含停止前已完成，样本不足或方差过大时整段预估不显示；"
-                     + "历史页按最小窗 960 重排（固定列合计 544 + 文件名保底 120 = 664 ≤ 内层可视 694.4），五个文本列挂气泡（气泡需真机鼠标悬停复验）；"
+                     + "历史页按最小窗 960 重排（固定列合计 544 + 文件名保底 120 = 664 ≤ 内层可视 694.4），五个文本列挂气泡（v1.2.2·5 号：延迟 0.4 秒，文件名列气泡带文件名/路径/打印机/时间四行详情、所在文件夹气泡显完整路径；气泡需真机鼠标悬停复验）；"
                      + "设置页三个目录行加载即显当前生效绝对路径，日志位置只在关于页。"
                      + "逐条数字见自检报告.txt 的「V4.4 五批」行 与 V44五批滚动条打印锁与进度定位.txt。"
                      + (ok ? " 判定：通过" : " 判定：失败");

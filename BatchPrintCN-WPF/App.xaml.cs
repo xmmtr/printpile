@@ -160,7 +160,23 @@ namespace BatchPrintCN
             return true;
         }
 
-        /// <summary>V3.1 卫生项：启动时清理转换临时目录残留（V4.1 指便携 tmp\）。</summary>
+        /// <summary>
+        /// v1.2.2 修（2026-11-08 拍板）：退出路径补日志冲刷——
+        /// ① FileLogger 自己 new 的 Serilog 文件 logger（shared 写句柄）显式 Dispose 冲刷；
+        /// ② 全局静态 Serilog.Log 若被谁配置过，按其官方口径 CloseAndFlush。
+        /// 两者都吞异常：退出清理失败不能砸掉正常退出。Environment.Exit 路径（instance-probe 探针）
+        /// 不走 OnExit，但探针模式本就"不读设置、不写日志"，无句柄可冲。
+        /// </summary>
+        protected override void OnExit(ExitEventArgs e)
+        {
+            try { FileLogger.Shutdown(); } catch { }
+            try { Serilog.Log.CloseAndFlush(); } catch { }
+            base.OnExit(e);
+        }
+
+        /// <summary>V3.1 卫生项：启动时清理转换临时目录残留（V4.1 指便携 tmp\）。
+        /// v1.2.2 修（2026-11-08 拍板）：tmp\preview（预览缓存）此前被这里的"只删 tmp 根下文件"豁免且无任何清理，
+        /// 现补上按年龄的旧产物清扫（7 天前才删，当次会话与刚生成的产物零影响），复用本方法同一启动时机与吞异常口径。</summary>
         private static void CleanupTmp()
         {
             try
@@ -172,6 +188,7 @@ namespace BatchPrintCN
                     }
             }
             catch { }
+            PreviewCache.CleanStale();
         }
 
         /// <summary>

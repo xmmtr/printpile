@@ -159,24 +159,30 @@ namespace BatchPrintCN
             return bad;
         }
 
-        // ===== 修6 的前提：打印计划（引擎）行为零变化 =====
+        // ===== 修6 的前提：打印计划（引擎）口径——v1.2.2 修（2026-11-08 拍板）：空集不再回退打全部，改抛 RangeInvalidException =====
         private static List<string> V49RPlan(StringBuilder sb)
         {
             var bad = new List<string>();
             var opt = new PrintOptions();
-            int[] fb = PrintPlan.PageSequence(12, "99", null, opt);        // 空集 → 回退全部（原行为）
+            // v1.2.2 修（2026-11-08 拍板）：原断言钉"空集回退打印全部页"（危险默认）；拍板后按 K-20261016-03"只许修准/加严"
+            // 修准为"空集必抛 RangeInvalidException"（超界"99"与纯乱写"abc"各实测一条，口径与 PrintPlanTests 对应用例一致）。
+            string threw99 = null, threwGarbage = null;
+            try { PrintPlan.PageSequence(12, "99", null, opt); threw99 = "未抛"; }
+            catch (RangeInvalidException) { threw99 = "抛"; }
+            try { PrintPlan.PageSequence(12, "abc", null, opt); threwGarbage = "未抛"; }
+            catch (RangeInvalidException) { threwGarbage = "抛"; }
             int[] part = PrintPlan.PageSequence(12, "1-8,13", null, opt);
             int[] okp = PrintPlan.PageSequence(12, "3-5", null, opt);
             int[] none = PrintPlan.PageSequence(12, "", null, opt);
             int[] fw = PrintPlan.PageSequence(12, "３－５", null, opt);
-            sb.AppendLine("— 修6 打印计划零变化：\"99\"/12 页→" + fb.Length + " 页[" + string.Join(",", fb.Take(3)) + "…]；"
+            sb.AppendLine("— 修6 打印计划（v1.2.2 起）：\"99\"与纯乱写\"abc\"→" + threw99 + "/" + threwGarbage + " RangeInvalidException；"
                 + "\"1-8,13\"→" + part.Length + " 页；\"3-5\"→" + okp.Length + " 页；未填→" + none.Length
                 + " 页；全角\"３－５\"→" + fw.Length + " 页[" + string.Join(",", fw) + "]");
-            Check(bad, "V4.9 修整·修6 空集回退打印全部的行为原样保留（PageSequence(\"99\",12)＝12 页、与未填范围同结果）——本版只加显示，不动引擎",
-                fb.Length == 12 && none.Length == 12 && fb.SequenceEqual(none));
+            Check(bad, "v1.2.2 修（2026-11-08 拍板）空集不再回退打全部：PageSequence(\"99\",12) 与纯乱写 \"abc\" 必抛 RangeInvalidException（取代原\"回退全部\"快照，加严）；未填范围仍＝全部页",
+                threw99 == "抛" && threwGarbage == "抛" && none.Length == 12);
             Check(bad, "V4.9 修整·修6 部分忽略/有效区间/未填三档页数不受本版改动影响（8 / 3 / 12），全角\"３－５\"按修1 打成 3 页",
                 part.Length == 8 && okp.Length == 3 && fw.Length == 3 && fw.SequenceEqual(new[] { 2, 3, 4 }));
-            Check(bad, "V4.9 修整·修6 呈现层结论与引擎同源：判 Invalid 的输入正好就是引擎走回退的那些（\"99\" 是、\"1-8,13\" 不是、未填不是）",
+            Check(bad, "V4.9 修整·修6 呈现层结论与引擎同源：判 Invalid 的输入正好就是引擎抛 RangeInvalidException 的那些（\"99\" 是、\"1-8,13\" 不是、未填不是）",
                 RangeVerdict.Build("99", 12).Mark == RangeMark.Invalid
                 && RangeVerdict.Build("1-8,13", 12).Mark == RangeMark.Partial
                 && RangeVerdict.Build("", 12).Mark == RangeMark.Empty);
@@ -238,7 +244,14 @@ namespace BatchPrintCN
                 var tb = PagesTextOf(root, grid, c.R);
                 Color got = tb == null ? Colors.Black : V44Fix3Color(tb.Foreground, Colors.Black);
                 double need = TextNeedWidth(tb, c.R.PagesText);
-                double avail = tb == null ? 0 : tb.ActualWidth;
+                // v1.2.2 修（2026-11-14 实机反馈 2 号）改判留痕：页数列文字水平居中后，TextBlock 不再横向铺满，
+                // tb.ActualWidth＝文案自身宽、不再等于"可用宽"（原测法随之失真，最坏写法那行甚至恒真）。
+                // "放得下"的可用宽改按所在单元格实取：列宽 − 单元格左右内边距 − 左右边线（与修整17a 同口径），
+                // 判据本身（文案需宽 ≤ 可用宽）一个字没放宽。
+                var pagesCell = CellOf(root, c.R, grid, Res("s.ColPages"));
+                double avail = pagesCell == null ? 0 : pagesCell.ActualWidth
+                    - (pagesCell.BorderThickness.Left + pagesCell.BorderThickness.Right)
+                    - (pagesCell.Padding.Left + pagesCell.Padding.Right);
                 string cellW = avail.ToString("0.#") + "/" + ColW(grid, Res("s.ColPages")).ToString("0.#");
                 sb.AppendLine("    " + c.N + "：范围=\"" + c.R.RangeText + "\" 页数列=\"" + c.R.PagesText + "\"（前景 "
                     + V44Fix3Hex(got) + "，期望 " + V44Fix3Hex(c.Want) + "）种类=" + c.R.RangeState
@@ -250,18 +263,22 @@ namespace BatchPrintCN
                 Check(bad, tag + " " + c.N + " 上色走内容元素自身（CellTextPages 触发器，不是父级继承＝缺陷B 教训）",
                     tb != null && tb.Style != null && Equals(tb.Style, Application.Current.TryFindResource("CellTextPages")));
                 // 修2 溢出口径：文案"要多宽"必须 ≤ 单元格实得宽（放不下的话 WPF 只画省略号，行高不动但用户看不到数字）
-                Check(bad, tag + " " + c.N + " 页数列文案在 60 DIP 列里放得下（需 " + need.ToString("0.#") + " ≤ 实得 "
+                Check(bad, tag + " " + c.N + " 页数列文案在列里放得下（需 " + need.ToString("0.#") + " ≤ 可用 "
                     + avail.ToString("0.#") + "；放不下就按修2 口径缩文案、全称留气泡与提示）",
                     tb != null && need <= avail + 0.5);
             }
             // 列宽预算实测（修2 溢出口径的证据）：同一字体下几种写法各要多宽，够不够放一目了然
+            // v1.2.2 改判：可用宽同上改按单元格实取（居中后 TextBlock.ActualWidth 不再是可用宽），判据未放宽。
             var probeTb = PagesTextOf(root, grid, rPart);
-            double availP = probeTb == null ? 0 : probeTb.ActualWidth;
+            var probeCell = CellOf(root, rPart, grid, Res("s.ColPages"));
+            double availP = probeCell == null ? 0 : probeCell.ActualWidth
+                - (probeCell.BorderThickness.Left + probeCell.BorderThickness.Right)
+                - (probeCell.Padding.Left + probeCell.Padding.Right);
             var cands = new[] { "8/12 页", "8/12页", "8/12", "100/120 页", "100/120", "未生效", "invalid", "12 页" };
             sb.AppendLine("    列宽实测：单元格实得 " + availP.ToString("0.#") + " DIP（列宽 " + ColW(grid, Res("s.ColPages")).ToString("0.#")
                 + "），几种写法需宽 " + string.Join(" ", cands.Select(s => "\"" + s + "\"=" + TextNeedWidth(probeTb, s).ToString("0.#")))
                 + "；本版页数列文案=\"" + Res("s.RangeCountFmt") + "\" 短文=\"" + Res("s.RangeBadShort") + "\"");
-            Check(bad, tag + " 修2 页数列文案在 60 DIP 列宽内不截断（列头不折行的同一预算；缩文案优先，不动列宽体系）",
+            Check(bad, tag + " 修2 页数列文案在列宽内不截断（列头不折行的同一预算；缩文案优先，不动列宽体系；列宽 72＝V4.9 修2 微调档）",
                 TextNeedWidth(probeTb, Res("s.RangeCountFmt").Replace("{0}", "8").Replace("{1}", "12")) <= availP + 0.5
                 && TextNeedWidth(probeTb, Res("s.RangeBadShort")) <= availP + 0.5);
 
@@ -348,6 +365,16 @@ namespace BatchPrintCN
             bool a3 = MainWindow.PopupAbove(1033, 1040, 60);    // 连余量都不够
             sb.AppendLine("    修3 翻转判据（锚点下沿/工作区底/所需高）：600,1040,60→朝上=" + a1 + "；1000,1040,60→" + a2 + "；1033,1040,60→" + a3);
             Check(bad, tag + " 修3 翻转判据是量出来的几何：空间够朝下、放不下朝上（含 8 DIP 余量），不是按行号猜\"最后一行\"", !a1 && a2 && a3);
+
+            // —— v1.2.2 修（2026-11-14 实机反馈 3 号）：气泡不跟窗（拖动主窗口后留在屏幕原地不消失） ——
+            // 修法＝主窗口 LocationChanged/Deactivated → CloseAllOpenRangeBubbles() 收掉全部已开气泡（MainWindow.RangeFeedback.cs）。
+            // 无头环境浮层落不了地（见修3 环境对照，IsOpen 置真也回 false）——这里验"清扫方法可安全执行、清扫后气泡保持收起、
+            // 锚定不变"这一层；浮层的真机可见性行为仍交渲染特写与真机复验（口径同修3，不放宽别的判据）。
+            int swept = w.CloseAllOpenRangeBubbles();
+            sb.AppendLine("    修7（v1.2.2）拖窗/失活清扫：无头执行收掉 " + swept + " 个（浮层未落地），清扫后 IsOpen=" + popup.IsOpen
+                + " 锚定不变=" + ReferenceEquals(popup.PlacementTarget, boxOk));
+            Check(bad, tag + " 修7（v1.2.2）拖窗/失活收气泡：清扫方法在无头窗口可安全执行且清扫后气泡保持收起（锚定输入框不变）",
+                swept == 0 && !popup.IsOpen && ReferenceEquals(popup.PlacementTarget, boxOk));
 
             // —— 铁律：六行等高（四态行 + 全角行 + Office 行同表）——
             // 口径沿用修整10：行高＝RowHeight + 底边线（本机 125% 下实测 36.8），判"所有行等高、不随内容长"，不断等于 36
@@ -502,7 +529,7 @@ namespace BatchPrintCN
             return bad;
         }
 
-        /// <summary>渲染取证的同一批行：六行覆盖 绿 1/12 页 · 黄 8/12 页 · 红 未生效 · 空水印 · 全角 · Office 未知。</summary>
+        /// <summary>渲染取证的同一批行：六行覆盖 绿 1/12 页 · 黄 8/12 页 · 红 未生效 · 空值（v1.2.2 起范围列不留水印）· 全角 · Office 未知。</summary>
         private static MainWindow SeedRangeRows(string dir, out RowVm rOk, out RowVm rPart, out RowVm rBad,
             out RowVm rNone, out RowVm rFull, out RowVm rOff)
         {
@@ -545,7 +572,7 @@ namespace BatchPrintCN
                     var grid = w.FindName("Grid") as DataGrid;
                     code |= RenderWindow("V49范围反馈" + ts + "自检.txt", "V49范围反馈-打印页-" + ts + ".png", w, 1120, 700, new string[0], 0);
                     sb.AppendLine("—" + ts + "：打印页六行（绿" + rOk.PagesText + " / 黄" + rPart.PagesText + " / 红" + rBad.PagesText
-                        + " / 空水印" + rNone.PagesText + " / 全角" + rFull.PagesText + " / Office" + rOff.PagesText + "）" + RowHeightsNote(grid));
+                        + " / 空值" + rNone.PagesText + " / 全角" + rFull.PagesText + " / Office" + rOff.PagesText + "）" + RowHeightsNote(grid));
                 }
 
                 // 英文一张（页数列短文与提示文案都要目视过一遍 60 DIP 列宽）
@@ -614,7 +641,7 @@ namespace BatchPrintCN
             catch (Exception ex) { sb.AppendLine("探针异常：" + ex); code |= 1; }
             string txt = sb.ToString();
             txt += "\r\n说明：V4.9 版本内修整（40 号·打印范围反馈优化·固定行高版）取证——打印页浅/深各一张（六行等高目检：绿 1/12 页 / 黄 8/12 页 / "
-                 + "红 未生效 / 空水印 / 全角 / Office 页数未知）、聚焦气泡特写一张（浮层，含\"已自动兼容全角输入\"注记）、无效红字特写一张（页数格＋范围格）、"
+                 + "红 未生效 / 空值（v1.2.2 起范围列不留水印，空=全部页面） / 全角 / Office 页数未知）、聚焦气泡特写一张（浮层，含\"已自动兼容全角输入\"注记）、无效红字特写一张（页数格＋范围格）、"
                  + "打印后状态列黄警告一张（部分超出不告警，只在文件日志补一行）、英文打印页一张（核对 60 DIP 列宽里的短文）。"
                  + "行高口径沿用修整10：RowHeight 36 + 底边线（本机 125% 实测 36.8），判「六行等高、不随内容长」——行内零撑高元素，详情一律走气泡与提示两个浮层。自检全程离线，不打网络、不真打印。"
                  + (txt.Contains("失败") || txt.Contains("未渲染") ? " 判定：以自检行与逐条数字为准（本段含失败/未渲染字样）" : " 判定：出图完整");
@@ -633,7 +660,7 @@ namespace BatchPrintCN
                 App.ApplyLanguage(AppLanguage.ZhCN);
                 sb.AppendLine("======== V4.9 修整·修1 页码范围解析全角归一化（PrintCore.ParseRange） ========");
                 bad.AddRange(V49RParse(sb));
-                sb.AppendLine("======== V4.9 修整·修6 前提核对：打印计划（PrintPlan）行为零改动 ========");
+                sb.AppendLine("======== V4.9 修整·修6 前提核对：打印计划（PrintPlan）口径（v1.2.2 拍板：空集改抛 RangeInvalidException，不再回退打全部） ========");
                 bad.AddRange(V49RPlan(sb));
                 sb.AppendLine("======== V4.9 修整·修2/3/4/5/6 呈现层（真实列表行 + 可视树实取；浅/深/英文三遍） ========");
                 bad.AddRange(V49RRows(AppTheme.Light, AppLanguage.ZhCN, sb));
@@ -647,7 +674,7 @@ namespace BatchPrintCN
             catch (Exception ex) { bad.Add("探针异常 " + ex.Message); sb.AppendLine(ex.ToString()); }
             try { File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "V49范围反馈定位.txt"), sb.ToString(), new UTF8Encoding(true)); } catch { }
             return bad.Count == 0
-                ? "通过（修1 全角\"１\"/\"３－５\"/全半角混排各一条实测、超范围仍静默忽略、荒谬区间有护栏；修6 前提＝PageSequence 空集回退打全部行为原样保留；"
+                ? "通过（修1 全角\"１\"/\"３－５\"/全半角混排各一条实测、超范围仍静默忽略、荒谬区间有护栏；修6 前提＝v1.2.2 拍板起空集范围必抛 RangeInvalidException（取代回退打全部）、未填范围仍＝全部页；"
                   + "修2 页数列三态（绿 1/12 页·黄 8/12 页·红 未生效）浅/深/英文三遍取可视树真实前景逐一对色且黄字三档底色对比度 ≥4.5、逐键打字两次通知两次、Office 行打印回写总页数后从两态升到 X/N、三位数页数退成短文且文案需宽≤单元格实得（列宽实测留证）；"
                   + "修3 气泡锚定输入框/不收焦点/默认收起、聚焦与失焦向同一 Popup 发开收请求（落点 Bottom+2 与 Top−2 实取、朝上判据纯几何三例；无头窗口没有 PresentationSource 故浮层不落地，可见性由渲染特写与真机复验覆盖）；"
                   + "修4 无效标红改回即复原，红字与聚焦红框只认结构化布尔（触发器清单原样落日志）；"

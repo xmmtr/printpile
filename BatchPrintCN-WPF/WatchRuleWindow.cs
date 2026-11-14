@@ -84,6 +84,7 @@ namespace BatchPrintCN
             // ① 规则名
             AddLabel(grid, row, L("s.WatchDlgName"), secBrush);
             _name = new TextBox { Text = _rule.Name ?? "", Height = 30, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13 };
+            _name.Style = (Style)(app != null ? app.TryFindResource("InputGlowBox") : null);   // v1.2.2（2026-11-14 拍板）：统一方案 G 极光样式
             AddField(grid, row++, _name);
 
             // ② 文件夹＋浏览＋含子文件夹
@@ -92,6 +93,7 @@ namespace BatchPrintCN
             folderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             folderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             _folder = new TextBox { Text = _rule.Folder ?? "", Height = 30, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13 };
+            _folder.Style = (Style)(app != null ? app.TryFindResource("InputGlowBox") : null);   // v1.2.2（2026-11-14 拍板）：统一方案 G 极光样式
             Grid.SetColumn(_folder, 0); folderRow.Children.Add(_folder);
             var browse = new Button { Content = L("s.WatchDlgBrowse"), Height = 30, Padding = new Thickness(10, 0, 10, 0), Margin = new Thickness(6, 0, 0, 0), FontSize = 12 };
             browse.Style = (Style)(app != null ? app.TryFindResource("BtnOutline") : null);
@@ -105,6 +107,7 @@ namespace BatchPrintCN
             // ③ 文件类型
             AddLabel(grid, row, L("s.WatchDlgTypes"), secBrush);
             _types = new TextBox { Text = _rule.Types ?? "", Height = 30, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13 };
+            _types.Style = (Style)(app != null ? app.TryFindResource("InputGlowBox") : null);   // v1.2.2（2026-11-14 拍板）：统一方案 G 极光样式
             AddField(grid, row++, _types);
             AddField(grid, row++, Hint(L("s.WatchDlgTypesHint")));
 
@@ -117,6 +120,8 @@ namespace BatchPrintCN
             windowRow.Children.Add(_allDay);
             _start = new TextBox { Text = string.IsNullOrWhiteSpace(_rule.StartTime) ? "08:00" : _rule.StartTime, Width = 74, Height = 30, Margin = new Thickness(12, 0, 0, 0), TextAlignment = TextAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13 };
             _end = new TextBox { Text = string.IsNullOrWhiteSpace(_rule.EndTime) ? "18:00" : _rule.EndTime, Width = 74, Height = 30, Margin = new Thickness(6, 0, 0, 0), TextAlignment = TextAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13 };
+            _start.Style = (Style)(app != null ? app.TryFindResource("InputGlowBox") : null);   // v1.2.2（2026-11-14 拍板）：统一方案 G 极光样式
+            _end.Style = (Style)(app != null ? app.TryFindResource("InputGlowBox") : null);
             windowRow.Children.Add(Labeled(L("s.WatchDlgFrom"), _start, secBrush));
             windowRow.Children.Add(Labeled(L("s.WatchDlgTo"), _end, secBrush));
             AddField(grid, row++, windowRow);

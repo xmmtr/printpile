@@ -56,7 +56,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0" MinWidth="70" Height="30" VerticalAlignment="Center" Margin="0,0,6,0">
-                    <TextBox x:Name="SearchBox" FontSize="12" VerticalContentAlignment="Center" TextChanged="OnSearchChanged"/>
+                    <TextBox x:Name="SearchBox" Style="{StaticResource InputGlowBox}" FontSize="12" VerticalContentAlignment="Center" TextChanged="OnSearchChanged"/>
                     <TextBlock x:Name="SearchHint" Text="{DynamicResource s.HistorySearch}" Margin="8,0,4,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" IsHitTestVisible="False" TextWrapping="NoWrap"/>
                 </Grid>
                 <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="FilterPrinter" Grid.Column="1" Width="110" Height="30" VerticalAlignment="Center" FontSize="12" Margin="0,0,6,0" SelectionChanged="OnFilterChanged"/>
@@ -67,8 +67,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                      中文最宽「最近十天」48.0、英文原最宽「200 rows」51.9，而 70 只给到 36 → 判"档位项折行"），故取 **84**（可用 50）。
                      英文三项按需求方 2026-10-09 拍板走"只改文案、不动框宽与结构"一路线收窄：Last 10 days→10 days、200 rows→200、100 rows→100
                      （改后英文最宽项「10 days」实测约 40.0 ≤ 50）；960 视口下搜索框实宽 84.8 ＞ MinWidth 70 → 单排且不裁。
-                     73 号令：「无限制」档对所有人敞开后英文项 Unlimited（56.1）撑破同一可用区 → 沿 61 号"只改文案、不动框宽"路线改判为 All。 -->
-                <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="LimitBox" Grid.Column="4" Width="84" Height="30" VerticalAlignment="Center" FontSize="12" Margin="0,0,6,0" SelectionChanged="OnLimitChanged"/>
+                     73 号令：「无限制」档对所有人敞开后英文项 Unlimited（56.1）撑破同一可用区 → 沿 61 号"只改文案、不动框宽"路线改判为 All。
+                     v1.2.2 修（2026-11-14 实机反馈 5 号）：老板实机截图"显示 200…"被截——ComboBox 模板自 U1 起交由 WPF-UI，
+                     其内容区比"框宽−34"的旧估算更窄，84 档不够。加宽 84→96（可用区 +12）；960 最窄档搜索框星宽实测 84.8、
+                     MinWidth 70，+12 后仍有 72.8 ≥ 70，61 号"恒单行且零裁切"不受影响（修整13b/61 号断言为动态量测，会各自复核）。 -->
+                <ComboBox ItemTemplate="{StaticResource ComboTextTemplate}" x:Name="LimitBox" Grid.Column="4" Width="96" Height="30" VerticalAlignment="Center" FontSize="12" Margin="0,0,6,0" SelectionChanged="OnLimitChanged"/>
                 <!-- V4.4 三批·修复B：内容是元素的按钮不吃 Styles.xaml 那份默认模板，字色在元素上就地钉回按钮的 Foreground
                      （否则被应用级隐式 TextBlock 样式抢走 → 深色主题白底按钮白字；本地值优先级高于样式 setter） -->
                 <Button x:Name="BtnRefresh" Grid.Column="5" Width="34" Height="30" Margin="0,0,6,0" Padding="0" VerticalAlignment="Center" Style="{StaticResource BtnOutline}" FontSize="13" Click="OnRefresh">
@@ -105,7 +108,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                       CanUserResizeColumns="False" ColumnHeaderStyle="{StaticResource NoGripHeader}"
                       RowStyle="{StaticResource GridRowLine}" CellStyle="{StaticResource GridCellLine}"
                       GridLinesVisibility="None" BorderThickness="0.5"
-                      BorderBrush="{DynamicResource GridLineBrush}">
+                      BorderBrush="{DynamicResource GridLineBrush}"
+                      MouseDoubleClick="OnGridDoubleClick">
                 <DataGrid.Columns>
                     <!-- F16（V4.3）：可排序列头统一带 ⇅ 提示 + tooltip；打印机列头带漏斗下拉筛选；引擎列隐藏（数据层不动） -->
                     <!-- 修整13/14（二批）：文件名列改星号宽（与主列表同口径）——列总宽撑满可视区，
@@ -117,8 +121,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                          状态列 60→70 是同一批新护栏抓出来的旧账：英文 "Status"+⇅ 实宽 52.8 + 列头内边距 16 = 68.8 > 60，
                          列头是 NoWrap 所以不折行、直接被裁（数字来自 960 档"列头不被裁"断言）。
                          压完固定列合计 544（页数/份数按保底 60 计），960 档文件名实得 ~150 → 两档都不出横向滚动条。
-                         会截断的文本列全部挂 CellTextTip（悬浮 1 秒显全值，同主页 CellTextName 口径）。 -->
-                    <DataGridTextColumn x:Name="ColName" Binding="{Binding Name}" Width="*" MinWidth="120" ElementStyle="{StaticResource CellTextTip}">
+                         会截断的文本列全部挂 CellTextTip（悬浮显全值，同主页 CellTextName 口径）。
+                         v1.2.2 修（2026-11-14 实机反馈 5 号）：延迟 1 秒→0.4 秒（基样式已改，此处跟随）；文件名列
+                         另换 CellTextTipFull——气泡从"只有文件名"改为多行详情（文件名／所在文件夹完整路径／打印机／
+                         时间），列内显示与列宽口径一字不动；所在文件夹列换 CellTextTipFolder 显完整路径气泡（见下）。 -->
+                    <DataGridTextColumn x:Name="ColName" Binding="{Binding Name}" Width="*" MinWidth="120" ElementStyle="{StaticResource CellTextTipFull}">
                         <DataGridTextColumn.Header>
                             <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
                                 <TextBlock Text="{DynamicResource s.HistoryName}" TextWrapping="NoWrap"/>
@@ -126,7 +133,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                             </StackPanel>
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Binding="{Binding FolderText}" Width="110" MinWidth="90" ElementStyle="{StaticResource CellTextTip}">
+                    <!-- v1.2.2 修（2026-11-14 实机反馈 5 号）：所在文件夹列气泡改绑完整路径（HistoryRow.FolderTip），
+                         列内显示仍是 FolderText 的 "—" 兜底口径；Folder 为空（旧记录）气泡置空不出空框（样式内 Trigger）。
+                         v1.2.2 功能（2026-11-14 老板需求）：列头改名「原文件所在路径」（s.HistoryFolder），列宽 110→124
+                         容纳新标题；多出的 14px 从打印机列匀出（110→96——该列本就截断＋有气泡兜底），固定列合计 544 不变。 -->
+                    <DataGridTextColumn x:Name="ColFolder" Binding="{Binding FolderText}" Width="124" MinWidth="100" ElementStyle="{StaticResource CellTextTipFolder}">
                         <DataGridTextColumn.Header>
                             <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
                                 <TextBlock Text="{DynamicResource s.HistoryFolder}" TextWrapping="NoWrap"/>
@@ -169,7 +180,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                             </StackPanel>
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Binding="{Binding Printer}" Width="110" ElementStyle="{StaticResource CellTextTip}">
+                    <!-- v1.2.2 功能（2026-11-14 老板需求）：打印机列 110→96——给「原文件所在路径」新标题让 14px；
+                         该列本就截断＋挂 CellTextTip 气泡兜底，列头"打印机＋漏斗"实测宽度仍在 96 内。 -->
+                    <DataGridTextColumn Binding="{Binding Printer}" Width="96" ElementStyle="{StaticResource CellTextTip}">
                         <DataGridTextColumn.Header>
                             <StackPanel Orientation="Horizontal" ToolTipService.ToolTip="{DynamicResource s.HistorySortHint}">
                                 <TextBlock Text="{DynamicResource s.Printer}" TextWrapping="NoWrap"/>

@@ -420,7 +420,8 @@ namespace BatchPrintCN
                     bool scrollRight = th == AppTheme.Dark;
                     double scrolledTo = -1;
                     PumpToLoaded();
-                    code |= RenderWindow("V492c缩放200" + ts + "自检.txt", "V492c预览缩放200-" + ts + ".png", pv, 1080, 720, new string[0], 0,
+                    // v1.2.2 修（2026-11-14 实机反馈 1 号）：出图宽 1080→1300＝预览窗新默认宽（与 V492 预览出图同一口径）
+                    code |= RenderWindow("V492c缩放200" + ts + "自检.txt", "V492c预览缩放200-" + ts + ".png", pv, 1300, 720, new string[0], 0,
                         scrollRight ? (Action)(() => { scrolledTo = ScrollToSheetRight(pv); }) : null);
                     sb.AppendLine("—" + ts + "：预览大页 200% 态，信息条读数「视图缩放 200%」，页面宽 " + pv.SheetWidthForTest.ToString("0.#") + " DIP＞可视区；"
                         + "信息条左侧翻页组读数「" + pv.PageReadoutForTest + "」（「上一页」此时可用=" + pv.PrevPageEnabledForTest + "），右侧缩放组＝−／读数／＋／适合页面／实际大小；"
@@ -444,7 +445,7 @@ namespace BatchPrintCN
                 sb.AppendLine("—末页边界态：当前页下标=" + mpv.ShownIndex + "（共 " + mpv.Pages.Count + " 页）　页码读数=\""
                     + mpv.PageReadoutForTest + "\"　「上一页」可用=" + mpv.PrevPageEnabledForTest + "　「下一页」可用=" + mpv.NextPageEnabledForTest
                     + "　缩放读数=" + mpv.ZoomReadoutForTest);
-                code |= RenderWindow("V492c末页边界自检.txt", "V492c预览末页边界-浅色.png", mpv, 1080, 720, new string[0], 0);
+                code |= RenderWindow("V492c末页边界自检.txt", "V492c预览末页边界-浅色.png", mpv, 1300, 720, new string[0], 0);
                 sb.AppendLine("—浅色：末页（缩略图末格高亮、页码读数＝第 N / N 页、「下一页」置灰）＋再进一次不变化（边界 no-op）出图");
                 mpv.Close();
             }

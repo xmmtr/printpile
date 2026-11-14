@@ -39,11 +39,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
        违反 73 号 Rule 3 的"打印链路与更新链路零改动"），与本令取消的收费模式无关。
        V1.2.1（80 号开工令 2026-10-17）：设置页新增「开机自启动」开关（HKCU 的 CurrentVersion\Run 值名 PrintPile，
        默认关、开即写关即删、每次启动按 settings.json 里的意图对齐）；本目录＝v1.2.0 已提交树以 git archive 导出，
-       此后 v1.2.0 与 v1.2.0-win7 两树一并冻结只读。D-20 三位数口径：功能新增＝末位 +1，对外三位 1.2.1。 -->
+       此后 v1.2.0 与 v1.2.0-win7 两树一并冻结只读。D-20 三位数口径：功能新增＝末位 +1，对外三位 1.2.1。
+       V1.2.2（2026-11-08 老板拍板）：技术债清理＋测试补全＋六项拍板——死代码删除（PrinterDevMode 整文件／TryPrint 两参旧重载／OverflowScan.NotScanned 别名）、
+       版本 1.2.1→1.2.2 实升（对外三位 1.2.2）、修整14 连贯判据按本机 DPI 归一修准（判据修准非放宽）。 -->
   <PropertyGroup>
-    <Version>1.2.1</Version>
-    <AssemblyVersion>1.2.1.0</AssemblyVersion>
-    <FileVersion>1.2.1.0</FileVersion>
+    <Version>1.2.2</Version>
+    <AssemblyVersion>1.2.2.0</AssemblyVersion>
+    <FileVersion>1.2.2.0</FileVersion>
     <!-- 52 号令 D-14：更新清单分流开关，只许取 commercial / free 两个值（见上方 V1.2.0 段的不动理由）。 -->
     <ProductFlavor>commercial</ProductFlavor>
     <LangVersion>latest</LangVersion>

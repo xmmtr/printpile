@@ -44,6 +44,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     <SolidColorBrush x:Key="BorderBrush" Color="#323232"/>
     <SolidColorBrush x:Key="BorderStrongBrush" Color="#3D3D3D"/>
+    <!-- v1.2.2 修（2026-11-14 实机反馈 2 号）：输入框可见边框色，键名与浅色字典一一对应。
+         不喂 border 令牌（#3D3D3D 压在 #272727 行底上不可辨），取 #5A5A5A（行底 Δ≈51）；浅色档见 LightTheme.xaml。 -->
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#5A5A5A"/>
+    <!-- v1.2.2 功能（2026-11-14 老板拍板方案 G「极光渐变描边」）：与浅色字典一一成对（键名见 LightTheme.xaml 注释）。
+         深色常态＝#5A5E66→#43454B 渐变（#272727 行底上可辨）；聚焦＝#60A5FA→#22D3EE 提亮档＋同色光晕。 -->
+    <LinearGradientBrush x:Key="InputBorderGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#5A5E66" Offset="0"/>
+        <GradientStop Color="#43454B" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="InputFocusGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#60A5FA" Offset="0"/>
+        <GradientStop Color="#22D3EE" Offset="1"/>
+    </LinearGradientBrush>
+    <DropShadowEffect x:Key="InputFocusGlow" BlurRadius="9" ShadowDepth="0" Color="#60A5FA" Opacity="0.45"/>
 
     <SolidColorBrush x:Key="DangerBrush" Color="#FF8A8A"/>
     <SolidColorBrush x:Key="DangerBorderBrush" Color="#B13A34"/>

@@ -111,7 +111,9 @@ namespace BatchPrintCN
 
         private void Rebuild()
         {
-            List<WatchRule> rules = WatchRuleStore.Load();
+            // v1.2.2 修（2026-11-08 拍板）：列表重建与状态列一秒一拍都改走 LoadCached（缓存只在 CRUD 后失效），
+            // 不再每拍重读 watch-rules.json；CRUD 各自仍走无缓存的 Load()，行为不变。
+            List<WatchRule> rules = WatchRuleStore.LoadCached();
             var ids = rules.Select(r => r.Id ?? "").ToList();
             var cur = _rows.Select(x => x.Rule.Id ?? "").ToList();
             bool same = ids.Count == cur.Count && !ids.Where((id, i) => id != cur[i]).Any();
@@ -127,10 +129,11 @@ namespace BatchPrintCN
             RequestStarFill();
         }
 
-        /// <summary>一秒一拍只动「状态」列（目录有问题＝黄字提示；正常＝本轮已触发＋最近文件）。</summary>
+        /// <summary>一秒一拍只动「状态」列（目录有问题＝黄字提示；正常＝本轮已触发＋最近文件）。
+        /// v1.2.2 修（2026-11-08 拍板）：本方法每秒执行一次，规则表改读缓存（LoadCached，CRUD 后才失效），不再每拍读盘。</summary>
         private void UpdateStates()
         {
-            List<WatchRule> all = WatchRuleStore.Load();
+            List<WatchRule> all = WatchRuleStore.LoadCached();
             foreach (RuleRow row in _rows)
             {
                 WatchRules.FolderProblem p = WatchRules.CheckFolder(row.Rule.Folder, all, row.Rule.Id);

@@ -27,6 +27,8 @@ namespace BatchPrintCN
     /// 铁律＝所有行高锁死不变，所以解析结论只能走浮层：气泡（聚焦时）与 ToolTip（悬停时），
     /// 两者的文本都取 RowVm.RangeHint——与页数列是同一次解析（RangeVerdict.Build）出来的，不会各说各话。
     /// 气泡不接收焦点、不占布局空间；锚点在输入框正下方，贴近屏幕下缘（含最后一行）时朝上翻转防出屏。
+    /// v1.2.2 修（2026-11-14 实机反馈 3 号）：气泡开着拖动主窗口会留在屏幕原地——挂窗口
+    /// LocationChanged/Deactivated 主动收掉所有已开的范围气泡（InitRangeBubbleAutoClose/CloseAllOpenRangeBubbles）。
     /// </summary>
     public partial class MainWindow
     {
@@ -55,6 +57,38 @@ namespace BatchPrintCN
         {
             Popup popup = RangeBubbleOf(box);
             if (popup != null) popup.IsOpen = false;
+        }
+
+        // ===== v1.2.2 修（2026-11-14 实机反馈 3 号）：气泡不跟窗 =====
+        // 老板实机反馈：气泡开着时拖动主窗口，气泡（StaysOpen=true 的 Popup）留在屏幕原地不消失——
+        // WPF 的 Popup 是独立 HWND，PlacementTarget 随窗口移动不会触发重摆，必须在窗口移动时主动收。
+        // StaysOpen 收紧为 false 的方案评估过（MainWindow.xaml 气泡注释同口径）：mousedown 外点即收更激进，
+        // 但开气泡瞬间会抢鼠标捕获、可能吃掉输入框首次点击的 MouseUp，伤"点击输入框弹提示"的正向行为——
+        // 故 StaysOpen 保持 true，改由窗口事件主动关，双保险覆盖两类入口。
+
+        /// <summary>构造器里挂一次：窗口移动（拖标题栏、Win+方向键）与失活（点到别的程序/任务栏）时收掉所有已开的范围气泡。
+        /// 失焦收口（OnRangeBlur）只管焦点离开输入框的情形——拖标题栏不动焦点，必须有这条兜底。</summary>
+        internal void InitRangeBubbleAutoClose()
+        {
+            LocationChanged += (s, e) => CloseAllOpenRangeBubbles();
+            Deactivated += (s, e) => CloseAllOpenRangeBubbles();
+        }
+
+        /// <summary>收掉当前所有已开的范围气泡，返回收掉的个数（自检钩子；无头环境浮层落不了地，恒 0）。
+        /// 复用现成机制逐实生成行找：ItemContainerGenerator 取行容器 → FindRangeBoxIn 找 RangeBox →
+        /// RangeBubbleOf 找同格 Popup（虚拟化未生成的行不可能有开着的气泡；每格一份自己的 Popup，不存在共享实例）。</summary>
+        internal int CloseAllOpenRangeBubbles()
+        {
+            var grid = FindName("Grid") as DataGrid;
+            if (grid == null) return 0;
+            int closed = 0;
+            for (int i = 0; i < grid.Items.Count; i++)
+            {
+                var box = FindRangeBoxIn(grid.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow);
+                var popup = RangeBubbleOf(box);
+                if (popup != null && popup.IsOpen) { popup.IsOpen = false; closed++; }
+            }
+            return closed;
         }
 
         /// <summary>气泡在范围格的单元模板里，是与输入框同级的兄弟节点（每个单元格一份自己的实例，不存在共享实例问题）。</summary>

@@ -180,7 +180,7 @@ namespace BatchPrintCN
                 sb.AppendLine("— ⑤ 资源文案里被禁字样命中数=" + hits + "（词表：" + string.Join("/", BannedWords) + "）");
                 Check(bad, "73 号 字样门槛：中英两本文案里那六个被禁字样 0 命中（词表见 BannedWords，字面量拆开以免自污染）", hits == 0);
 
-                // ===== ⑥ 版本（80 号令就地改判：随主线走到 1.2.1.0；条目不删，钉的仍是「三处一致」这件事） =====
+                // ===== ⑥ 版本（80 号令就地改判：随主线；2026-11-08 拍板随主线走到 1.2.2.0；条目不删，钉的仍是「三处一致」这件事） =====
                 string fv = null, prod = null;
                 try
                 {
@@ -190,8 +190,8 @@ namespace BatchPrintCN
                 catch { }
                 string av = AppVersion.Full, disp = AppVersion.Display;
                 sb.AppendLine("— ⑥ 版本：FileVersion=" + fv + " ProductVersion=" + prod + " AssemblyVersion=" + av + " 界面＝" + disp);
-                Check(bad, "73 号 版本（80 号改判随主线 1.2.1.0）：FileVersion／AssemblyVersion 与界面三段号三处一致",
-                    fv == "1.2.1.0" && av == "1.2.1.0" && disp == "v1.2.1");
+                Check(bad, "73 号 版本（80 号改判随主线；2026-11-08 拍板随主线升 1.2.2.0）：FileVersion／AssemblyVersion 与界面三段号三处一致",
+                    fv == "1.2.2.0" && av == "1.2.2.0" && disp == "v1.2.2");
 
                 // ===== ⑦ 注册表退场（78 号·A1）：预置遗留键 → LegacyCleanup.Run() → 消失；连跑两次幂等不抛 =====
                 bool regBefore = LegacyCleanup.LegacyKeyExists();
@@ -241,7 +241,7 @@ namespace BatchPrintCN
             }
             WriteDiag("73号开源改造定位.txt", sb.ToString());
             return bad.Count == 0
-                ? "通过（73/78 号：①码制/验签/限时体验期/对话框那套类型在两个程序集里全部不在场 ②老 settings.json 的遗留键读取忽略、回写不再带、其余键零丢失、不崩 ③导出 CSV 常亮＋历史五档含无限制且不截断＋监视页随时可新建并起观察者 ④关于页解锁区五控件与功能一览整块消失、只留 GPLv3 声明＋GitHub/Gitee 双按钮（中英各一份）⑤中英本文案被禁六词 0 命中 ⑥FileVersion/AssemblyVersion=1.2.1.0（80 号改判随主线） ⑦注册表遗留键预置后 Run 删干净且二次幂等 ⑧导航键改名＋对话框两下拉文字单行、放不下走省略号（根因＝全局隐式 TextBlock 的 Wrap 被 ContentPresenter 继承）；逐条数字见 73号开源改造定位.txt）"
+                ? "通过（73/78 号：①码制/验签/限时体验期/对话框那套类型在两个程序集里全部不在场 ②老 settings.json 的遗留键读取忽略、回写不再带、其余键零丢失、不崩 ③导出 CSV 常亮＋历史五档含无限制且不截断＋监视页随时可新建并起观察者 ④关于页解锁区五控件与功能一览整块消失、只留 GPLv3 声明＋GitHub/Gitee 双按钮（中英各一份）⑤中英本文案被禁六词 0 命中 ⑥FileVersion/AssemblyVersion=1.2.2.0（80 号改判随主线；2026-11-08 拍板随升） ⑦注册表遗留键预置后 Run 删干净且二次幂等 ⑧导航键改名＋对话框两下拉文字单行、放不下走省略号（根因＝全局隐式 TextBlock 的 Wrap 被 ContentPresenter 继承）；逐条数字见 73号开源改造定位.txt）"
                 : "失败：" + string.Join("；", bad);
         }
 

@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -33,6 +34,10 @@ namespace BatchPrintCN
     /// 组成：标题（文件名）+ 信息条（类型与转换状态／纸张／缩放实际生效值／打印范围／黑白彩色份数）
     ///       + 顶部黄色警告条（与改1 日志同源）+ 左侧页缩略图列（点选切页）+ 中央大页渲染（叠版心虚线框与超界红斜纹）
     ///       + 底部「加入打印队列」「关闭」。
+    ///
+    /// v1.2.2 修（2026-11-14 实机反馈 1+4 号）：① 参数编辑条改「单行不换行」——WrapPanel 换成 ScrollViewer＋单排
+    /// StackPanel（窗口 MinWidth/默认宽同步加大，极窄时横向滚动条兜底，绝不折行）；② 图片（DocKind.Image）双击预览
+    /// 改直接渲染图片本身，不再走「转 PDF」通道（此前统一进转换链，图片没有转换器，弹「转换未产出 PDF」）。
     ///
     /// 三条硬口径：
     /// ① 主列表**行高/列宽/单元格零改动**——入口只是 DataGrid 的一个 MouseDoubleClick 处理器，不往格子里塞任何东西；
@@ -91,9 +96,16 @@ namespace BatchPrintCN
         private OverflowScan _scan;
         private SourceLayoutFinding _src;
         private string _pdf;
+        // v1.2.2 修（2026-11-14 实机反馈 4 号）：图片直渲模式——_imagePath 非空＝源是图片，预览不再转 PDF，
+        // 大页/缩略图都从图片本身出图；_imageWpt/_imageHpt 是图片按自身 DPI 折算的「页面」尺寸（pt）。
+        private string _imagePath;
+        private double _imageWpt, _imageHpt;
         private bool _fromCache;
         private int _shown = -1;
         private bool _busy;
+
+        /// <summary>本行是不是图片文件（v1.2.2 修：图片走直渲链路，不进转换）。</summary>
+        private bool IsImageJob { get { return _row != null && _row.Job != null && _row.Job.Kind == DocKind.Image; } }
 
         /// <summary>自检取用：当前信息条文本。</summary>
         internal string ChipsText { get { return _chips == null ? null : _chips.Text; } }
@@ -121,7 +133,10 @@ namespace BatchPrintCN
             _copies = EffectiveOptions.Copies(row.Override, row.Job.Copies);
 
             Title = L("s.PvTitleFmt").Replace("{0}", row.Job.Name);
-            Width = 1080; Height = 720; MinWidth = 860; MinHeight = 560;
+            // v1.2.2 修（2026-11-14 实机反馈 1 号）：参数编辑条改单排不折行后，860 宽放不下七项＋重置按钮
+            //（实测估算：五枚下拉 118×5 ＋ 份数 46 ＋ 范围 84 ＋ 七段标签与间距 ＋ 重置按钮 ≈ 1226 DIP ＋ 窗口边距 32），
+            // MinWidth 加大到 1260、默认宽 1080→1300；再窄的场景由编辑条的横向滚动条兜底（绝不折行）。
+            Width = 1300; Height = 720; MinWidth = 1260; MinHeight = 560;
             WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner;
             Background = Brush(app, "WindowBgBrush", Brushes.White);
             Foreground = Brush(app, "TextPrimaryBrush", Brushes.Black);
@@ -315,7 +330,8 @@ namespace BatchPrintCN
             root.Children.Add(foot);
 
             Content = root;
-            SetBusy(true, L("s.PvConvertingHint"));
+            // v1.2.2 修（2026-11-14 实机反馈 4 号）：图片装载不走转换引擎，等待文案不再说"出 PDF"
+            SetBusy(true, IsImageJob ? L("s.PvLoadingImage") : L("s.PvConvertingHint"));
             PreviewKeyDown += OnKeyDownZoom;        // 46 号·增1：Ctrl+0＝适合页面、Ctrl+1＝实际像素
             Loaded += (s, e) => StartLoad();
             Closed += (s, e) => { if (_owner != null) _owner.PreviewClosed(this); };
@@ -324,6 +340,10 @@ namespace BatchPrintCN
         // ===== 加载：转换（后台）→ 扫描 → 出缩略图与首页 =====
         private async void StartLoad()
         {
+            // v1.2.2 修（2026-11-14 实机反馈 4 号）：图片不进「转 PDF」通道——此前所有类型统一走
+            // PreviewCache.EnsurePdf → OfficeComPrinter.ConvertToPdfForPreview，而图片没有转换器，
+            // Worker 试图当 Word 转必然失败，预览窗就弹「转换未产出 PDF」。现在图片直接渲染图片本身。
+            if (IsImageJob) { StartLoadImage(); return; }
             object[] r = null;
             try
             {
@@ -354,6 +374,116 @@ namespace BatchPrintCN
             if (_pages.Count > 0) ShowPage(0);
         }
 
+        // ===== v1.2.2 修（2026-11-14 实机反馈 4 号）：图片直渲链路（装载 → 缩略图/大页都走 RasterizeImage）=====
+
+        /// <summary>
+        /// 图片装载（后台量尺寸 → 单页呈现代码与 PDF 路径同款）：不调转换引擎、没有缓存产物；
+        /// 一张图片＝一页（与打印口径一致，MainWindow 页数列对 Image 也报 1 页）。
+        /// </summary>
+        private async void StartLoadImage()
+        {
+            object[] r = null;
+            try
+            {
+                r = await System.Threading.Tasks.Task.Run(() =>
+                {
+                    double wpt, hpt; string err;
+                    if (!ImagePagePt(_row.Job.FilePath, out wpt, out hpt, out err))
+                        return new object[] { null, 0.0, 0.0, err ?? "" };
+                    return new object[] { _row.Job.FilePath, wpt, hpt, null };
+                });
+            }
+            catch (Exception ex) { SetBusy(false, ImageLoadFailText(ex.Message)); return; }
+            if (r == null || r[0] == null) { SetBusy(false, ImageLoadFailText((r == null ? "" : (string)r[3]) ?? "")); return; }
+            _imagePath = (string)r[0];
+            _imageWpt = (double)r[1];
+            _imageHpt = (double)r[2];
+            _pdf = null;                 // 图片模式下没有 PDF 产物；_pdf==null 的既有判断全部按"图片模式"放宽
+            _scan = null;                // 体检只吃 PDF，图片没有超界扫描结论（叠加层只剩版心虚线框）
+            _src = null;                 // 源版面体检只吃 docx，图片如实不做
+            _fromCache = false;
+            _totalPages = 1;
+            _pages = new List<int> { 0 };
+            _chips.Text = BuildChips();
+            ApplyWarning();
+            BuildThumbs();
+            SetBusy(false, _pages.Count == 0 ? L("s.PvNoPages") : "");
+            if (_pages.Count > 0) ShowPage(0);
+        }
+
+        private string ImageLoadFailText(string detail)
+        {
+            return L("s.PvImageLoadFailedFmt").Replace("{0}", detail ?? "");
+        }
+
+        /// <summary>
+        /// 量一张图片的「页面」尺寸：pt＝像素×72/图片自身 DPI（96dpi 的 200px 图＝150pt，与打印 FitTo 同一把尺子）。
+        /// 先读字节再交给 GDI+ 解码，句柄即用即放，不锁源文件。打不开/不是图返回 false 并带原因。
+        /// </summary>
+        internal static bool ImagePagePt(string path, out double widthPt, out double heightPt, out string error)
+        {
+            widthPt = 0; heightPt = 0; error = null;
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) { error = "文件已不在原位"; return false; }
+            try
+            {
+                byte[] bytes = File.ReadAllBytes(path);
+                using (var ms = new MemoryStream(bytes))
+                using (var img = new System.Drawing.Bitmap(ms))
+                {
+                    float dpi = img.HorizontalResolution > 1f ? img.HorizontalResolution : 96f;
+                    widthPt = img.Width * 72.0 / dpi;
+                    heightPt = img.Height * 72.0 / dpi;
+                    return widthPt > 0 && heightPt > 0;
+                }
+            }
+            catch (Exception ex) { error = ex.Message; return false; }
+        }
+
+        /// <summary>
+        /// 把图片按目标 DPI 出成与 <see cref="PdfRaster.Rasterize"/> 同构的位图（BGR 行序、页面 pt 尺寸照带），
+        /// ShowPage 的换 Source／叠加层／缩放链路一行不改就能吃。目标尺寸＝页面 pt×DPI/72（与 PDF 同一公式），
+        /// 内存护栏：目标不放大过源图分辨率（放大不出细节，只白吃内存）、单边钳在 8192；GDI 位图全部 using 包裹。
+        /// 失败返回 null（调用方按「渲染失败」处理）。
+        /// </summary>
+        private static PageRaster RasterizeImage(string path, double dpi)
+        {
+            try
+            {
+                byte[] bytes = File.ReadAllBytes(path);
+                using (var ms = new MemoryStream(bytes))
+                using (var src = new System.Drawing.Bitmap(ms))
+                {
+                    float srcDpi = src.HorizontalResolution > 1f ? src.HorizontalResolution : 96f;
+                    double wpt = src.Width * 72.0 / srcDpi, hpt = src.Height * 72.0 / srcDpi;
+                    int w = Math.Max(1, (int)Math.Round(wpt * dpi / 72.0));
+                    int h = Math.Max(1, (int)Math.Round(hpt * dpi / 72.0));
+                    int maxW = Math.Min(Math.Max(src.Width, 1), 8192), maxH = Math.Min(Math.Max(src.Height, 1), 8192);
+                    if (w > maxW) { h = Math.Max(1, (int)Math.Round((double)h * maxW / w)); w = maxW; }
+                    if (h > maxH) { w = Math.Max(1, (int)Math.Round((double)w * maxH / h)); h = maxH; }
+                    using (var dst = new System.Drawing.Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+                    {
+                        using (var g = System.Drawing.Graphics.FromImage(dst))
+                        {
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                            g.Clear(System.Drawing.Color.White);   // 透明 PNG 先垫白底，与页面白底一致
+                            g.DrawImage(src, new System.Drawing.Rectangle(0, 0, w, h));
+                        }
+                        var bd = dst.LockBits(new System.Drawing.Rectangle(0, 0, w, h),
+                            System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                        try
+                        {
+                            var px = new byte[bd.Stride * h];
+                            System.Runtime.InteropServices.Marshal.Copy(bd.Scan0, px, 0, px.Length);
+                            return new PageRaster { Width = w, Height = h, Stride = bd.Stride, Pixels = px, WidthPt = wpt, HeightPt = hpt };
+                        }
+                        finally { dst.UnlockBits(bd); }
+                    }
+                }
+            }
+            catch { return null; }
+        }
+
         /// <summary>信息条里的小号文字按钮（47 号：缩放 −／＋ 与翻页 上一页／下一页 与 46 号的两个恢复口同款）。</summary>
         private Button SmallText(string content, string tipKey)
         {
@@ -373,12 +503,22 @@ namespace BatchPrintCN
         // ===== 57 号令·B：参数编辑条（第二个参数入口，与主列表参数卡同一数据源）=====
 
         /// <summary>编辑条：七项可调（双面/色彩/纸张/方向/缩放/份数/页码范围）＋「重置为跟随全局」。
-        /// 标签与选项一律复用既有资源键（s.Ps*／s.Col*／s.FollowGlobal／s.RowParamsReset），本令不新增键；
+        /// v1.2.2 修（2026-11-14 实机反馈 1 号）：由 WrapPanel 改成「ScrollViewer＋单排横向 StackPanel」——
+        /// WrapPanel 会把放不下的「页码范围/重置」挤到第二行（实机截图），现在所有控件恒在同一行、同高垂直居中、绝不折行；
+        /// 窗口 MinWidth 已按内容加大（1260），正常窗口整条放得下；真被压得比内容还窄时横向滚动条兜底，仍然不折行。
+        /// 标签与选项一律复用既有资源键（s.Ps*／s.Col*／s.FollowGlobal／s.RowParamsReset）；
         /// 「类型」与「输出」两枚仍只读（煤计项，57 号拍板）。下拉＝改动即写回；文本框＝回车或离开焦点写回（与列表单元格同一提交口径）。</summary>
         private FrameworkElement BuildParamBar()
         {
             var app = Application.Current;
-            var bar = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+            // 横向 StackPanel 在 ScrollViewer 里按内容全宽排版（测量不受视口约束），放不下时只出横向滚动条、永不换行
+            var host = new ScrollViewer
+            {
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Margin = new Thickness(0, 0, 0, 6)
+            };
+            var bar = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
 
             // 双面与缩放用「摘要行同款」的紧凑键（s.Pv*）——参数卡那套 s.Ps* 全称（如"双面 · 长边翻页（书籍式）"）
             // 在这条窄栏里会换行把整栏撑高；同一屏里下拉显示的字与生效摘要显示的字也保持一致。
@@ -408,7 +548,8 @@ namespace BatchPrintCN
             bar.Children.Add(ParamCell("s.ColCopies", _pCopies));
             bar.Children.Add(ParamCell("s.ColRange", _pRange));
             bar.Children.Add(_pReset);
-            return bar;
+            host.Content = bar;
+            return host;
         }
 
         /// <summary>下拉：第一项恒为「跟随全局」（＝null 覆盖），其后依次对应枚举值（与 RowParamsPanel 同一索引口径）。
@@ -437,6 +578,7 @@ namespace BatchPrintCN
                 Width = width,
                 VerticalContentAlignment = VerticalAlignment.Center
             };
+            tb.Style = (Style)Application.Current.TryFindResource("InputGlowBox");   // v1.2.2（2026-11-14 拍板）：输入框统一方案 G 极光样式
             tb.LostFocus += (s, e) => { if (!_loading) ApplyParams(); };
             tb.KeyDown += (s, e) => { if (e.Key == Key.Enter && !_loading) ApplyParams(); };
             return tb;
@@ -553,15 +695,17 @@ namespace BatchPrintCN
             _copies = EffectiveOptions.Copies(ov, _row != null ? _row.Job.Copies : 1);
             // 顺序有讲究：摘要行里的「全部（N 页）」取的是 _pages.Count，必须先重算页序再刷摘要，
             // 否则改完范围那一屏会显示上一次的页数（2026-10-09 自检抓到并修）。
-            if (_pdf != null)
+            // v1.2.2 修：图片模式同样走这段，但页序不走 PagesToShow——打印引擎对图片整个直出一页、
+            // 不吃范围/奇偶（PrintImage 不调 PageSequence），预览按"将会打印的"口径恒显这一页。
+            if (_pdf != null || _imagePath != null)
             {
-                _pages = PagesToShow(_totalPages, _rangeText, _eff);
+                _pages = _imagePath != null ? new List<int> { 0 } : PagesToShow(_totalPages, _rangeText, _eff);
                 ApplyWarning();
                 BuildThumbs();
                 SetBusy(false, _pages.Count == 0 ? L("s.PvNoPages") : "");
             }
             if (_chips != null) _chips.Text = BuildChips();
-            if (_pdf == null || _pages.Count == 0) return;
+            if ((_pdf == null && _imagePath == null) || _pages.Count == 0) return;
             ShowPage(_shown >= 0 && _shown < _pages.Count ? _shown : 0);   // 范围收窄后页码不越界
         }
 
@@ -589,7 +733,8 @@ namespace BatchPrintCN
                     Cursor = System.Windows.Input.Cursors.Hand,
                     Tag = idx
                 };
-                var raster = PdfRaster.Rasterize(_pdf, _pages[i], 24);
+                // v1.2.2 修：图片模式缩略图从图片本身出图（与 PDF 缩略图同一 24dpi 预算）
+                var raster = _imagePath != null ? RasterizeImage(_imagePath, 24) : PdfRaster.Rasterize(_pdf, _pages[i], 24);
                 UIElement inner = raster == null
                     ? (UIElement)new TextBlock { Text = L("s.PvRenderFailed"), FontSize = 10.5, TextWrapping = TextWrapping.Wrap }
                     : (UIElement)new Image { Source = ToSource(raster), Width = 104, Stretch = Stretch.Uniform };
@@ -629,14 +774,18 @@ namespace BatchPrintCN
 
         private void ShowPage(int i)
         {
-            if (_pdf == null || i < 0 || i >= _pages.Count) return;
+            // v1.2.2 修：图片模式下没有 _pdf，靠 _imagePath 判装载态
+            if (_pdf == null && _imagePath == null) return;
+            if (i < 0 || i >= _pages.Count) return;
             _shown = i;
             // 先量这一页的页面框（不出图），"适合页面"才有依据；否则第一遍会按 100% 白画一次
+            // （图片模式装载时已按自身 DPI 量好 pt 尺寸，不再走 pdfium）
             double pw0, ph0;
-            if (PdfRaster.PageSize(_pdf, _pages[i], out pw0, out ph0)) { _pageWpt = pw0; _pageHpt = ph0; }
+            if (_imagePath != null) { _pageWpt = _imageWpt; _pageHpt = _imageHpt; }
+            else if (PdfRaster.PageSize(_pdf, _pages[i], out pw0, out ph0)) { _pageWpt = pw0; _pageHpt = ph0; }
             double percent = EffectivePercent();
             double dpi = RenderDpi(percent);
-            var raster = PdfRaster.Rasterize(_pdf, _pages[i], (float)dpi);
+            var raster = _imagePath != null ? RasterizeImage(_imagePath, dpi) : PdfRaster.Rasterize(_pdf, _pages[i], (float)dpi);
             if (raster == null)
             {
                 _pageImage.Source = null;
@@ -1064,7 +1213,9 @@ namespace BatchPrintCN
 
         /// <summary>
         /// 只显示"将会打印"的页：页序直接取打印那份算法（<see cref="PrintPlan.PageSequence"/>），
-        /// 所以范围/奇偶/小册子在预览里同步生效；范围一个有效页码都没有时引擎按既有口径回退打全部，这里也照全部显示。
+        /// 所以范围/奇偶/小册子在预览里同步生效。v1.2.2 修（2026-11-08 拍板）：范围解析为空时引擎改抛
+        /// RangeInvalidException 按失败记账（不再回退打全部）；预览此处 catch 只作展示层降级、仍照全部页显示，
+        /// 该文件实际打不出来以列表行的失败红字与日志为准。
         /// </summary>
         internal static List<int> PagesToShow(int total, string rangeText, PrintOptions opt)
         {
@@ -1092,10 +1243,13 @@ namespace BatchPrintCN
         internal static string BuildChipsText(RowVm row, PrintOptions opt, string rangeText, int copies, int shownPages, bool fromCache, bool loading, Func<string, string> res)
         {
             string kind = FileClassifier.KindText(row.Job.Kind);
-            string typeText = row.Job.Kind == DocKind.Pdf
-                ? res("s.PvKindPdfFmt").Replace("{0}", kind)
-                : res("s.PvKindOfficeFmt").Replace("{0}", kind).Replace("{1}",
-                    loading ? res("s.PvStateConverting") : (fromCache ? res("s.PvStateCached") : res("s.PvStateNone")));
+            // v1.2.2 修（2026-11-14 实机反馈 4 号）：图片＝直接渲染，不报「→ PDF（转换状态）」
+            string typeText = row.Job.Kind == DocKind.Image
+                ? res("s.PvKindImageFmt").Replace("{0}", kind)
+                : row.Job.Kind == DocKind.Pdf
+                    ? res("s.PvKindPdfFmt").Replace("{0}", kind)
+                    : res("s.PvKindOfficeFmt").Replace("{0}", kind).Replace("{1}",
+                        loading ? res("s.PvStateConverting") : (fromCache ? res("s.PvStateCached") : res("s.PvStateNone")));
             string paper = (string.IsNullOrWhiteSpace(opt.PaperDisplayName) ? "A4" : opt.PaperDisplayName) + " "
                 + (opt.Orientation == OrientationMode.Landscape ? res("s.PvLandscape")
                    : opt.Orientation == OrientationMode.Portrait ? res("s.PvPortrait") : res("s.PvOrientAuto"));
@@ -1154,6 +1308,39 @@ namespace BatchPrintCN
             SetBusy(false, _pages.Count == 0 ? L("s.PvNoPages") : "");
             if (_pages.Count > 0) ShowPage(0);
         }
+
+        /// <summary>
+        /// 自检/渲染用：同步装载一张图片，走与 <see cref="StartLoadImage"/> 同一段图片直渲呈现代码
+        /// （装载失败时提示进 _hint，不打断自检流程）。
+        /// </summary>
+        internal void LoadImageForTest(string imagePath)
+        {
+            double wpt, hpt; string err;
+            if (!ImagePagePt(imagePath, out wpt, out hpt, out err))
+            {
+                SetBusy(false, ImageLoadFailText(err));
+                return;
+            }
+            _imagePath = imagePath;
+            _imageWpt = wpt;
+            _imageHpt = hpt;
+            _pdf = null;
+            _scan = null;
+            _src = null;
+            _fromCache = false;
+            _totalPages = 1;
+            _pages = new List<int> { 0 };
+            _chips.Text = BuildChips();
+            ApplyWarning();
+            BuildThumbs();
+            SetBusy(false, _pages.Count == 0 ? L("s.PvNoPages") : "");
+            if (_pages.Count > 0) ShowPage(0);
+        }
+
+        /// <summary>自检取用：当前是否图片直渲模式。</summary>
+        internal bool IsImageModeForTest { get { return _imagePath != null; } }
+        /// <summary>自检取用：大页区下的提示行文本（装载失败原因走这里）。</summary>
+        internal string HintTextForTest { get { return _hint == null ? null : _hint.Text; } }
 
         /// <summary>自检用：直接触发"加入打印队列"那段方法体（不合成鼠标事件）。</summary>
         internal void QueueForTest() { OnQueueClicked(); }

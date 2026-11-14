@@ -52,6 +52,9 @@ namespace BatchPrintCN
         private static string _themeName;
         // 52 号令·返修③：问题反馈自动打包日志上传（默认开，用户可关）。缺键＝开（老配置升级不改行为）。
         private static bool _feedbackAutoLogs = true;
+        // v1.2.2 功能（2026-11-13 老板需求）：虚拟打印机保存位置——自定义目录（null＝默认便携目录）＋打印前询问开关（null＝默认询问）
+        private static string _printoutDir;
+        private static bool? _askPrintoutEveryTime;
         // V4.9 修整第二批·修D：转换引擎 / 统计目录 / 保留转换产物 / 转换产物目录 / 打印输出目录五项的设置项已随
         // 设置页四块一起退役——下面的 getter 直接给"既有默认值"，打印与转换流程一行没改（引擎＝自动、目录＝便携默认）。
 
@@ -244,10 +247,32 @@ namespace BatchPrintCN
         /// <summary>V3.2：是否保留转换中间产物。修D 起界面不再提供开关，固定默认关（不影响转换与打印，只是不落那份对比件）。</summary>
         public static bool KeepConvertedPdf { get { return false; } }
 
-        /// <summary>V3.2：Microsoft Print to PDF 自动落盘目录（修D：不再可选，＝既有默认便携目录 程序目录\printout\）。</summary>
+        /// <summary>V3.2：Microsoft Print to PDF 自动落盘目录。v1.2.2 功能（2026-11-13 老板需求）：
+        /// 用户可在设置页自定义（存 settings.json 的 PrintoutDir 键），未设置时＝既有默认便携目录 程序目录\printout\。</summary>
         public static string PrintoutDirectory
         {
-            get { return DefaultPrintoutDirectory; }
+            get { return string.IsNullOrWhiteSpace(_printoutDir) ? DefaultPrintoutDirectory : _printoutDir; }
+        }
+
+        /// <summary>v1.2.2 功能（2026-11-13 老板需求）：打印到虚拟打印机（Microsoft Print to PDF）前是否询问保存位置。
+        /// 默认询问（缺键＝true，与浏览器"下载前询问"同口径）；用户在询问对话框勾「每次不询问」或设置页关掉后为 false。</summary>
+        public static bool AskPrintoutEveryTime { get { return _askPrintoutEveryTime ?? true; } }
+
+        /// <summary>v1.2.2：设置虚拟打印机保存目录（空/空白＝恢复默认便携目录）。</summary>
+        public static void SetPrintoutDirectory(string dir)
+        {
+            string v = string.IsNullOrWhiteSpace(dir) ? null : dir.Trim();
+            if (_printoutDir == v) return;
+            _printoutDir = v;
+            Save();
+        }
+
+        /// <summary>v1.2.2：设置"打印前是否询问保存位置"。</summary>
+        public static void SetAskPrintoutEveryTime(bool on)
+        {
+            if (_askPrintoutEveryTime == on) return;
+            _askPrintoutEveryTime = on;
+            Save();
         }
 
         /// <summary>V3.2：保留转换产物（中间 PDF）输出目录（修D：不再可选，默认同上）。</summary>
@@ -280,6 +305,8 @@ namespace BatchPrintCN
             public bool? FeedbackAutoLogs { get; set; }   // 52 号令·返修③：反馈自动打包日志（**可空**——缺键按默认开，同 AutoCheckUpdate 口径）
             public string ThemeName { get; set; }         // 52 号令·步骤 4：主题名（缺键＝旧 Theme 键迁移）
             public bool AutoStart { get; set; }           // 80 号令（V1.2.1）：开机自启动意图（缺键＝false，正是默认关；回写一律带上）
+            public string PrintoutDir { get; set; }       // v1.2.2 功能（2026-11-13）：虚拟打印机保存目录（缺键＝默认便携目录）
+            public bool? AskPrintoutEveryTime { get; set; }   // v1.2.2 功能：打印前询问保存位置（**可空**——缺键按默认 true，老配置升级不改变行为）
             // V4.8-1（36 号令定夺）：后端基址是产品属性不是用户配置，不再有 ApiBase 键——
             // 老 settings.json 里残留的 "ApiBase" 因不在本 DTO 里，读取时被忽略、下次保存即消失。
             // V4.9 修整第二批·修D（同一口径）：Engine / ReportDirectory / KeepConvertedPdf / ConvertOutputDirectory /
@@ -294,31 +321,39 @@ namespace BatchPrintCN
 
         public static void Load()
         {
-            try
+            // v1.2.2 修（2026-11-08 拍板）：读共享字段与 Save 同一把 Sync 锁——Save 已有锁而 Load 原来裸读，
+            // 并发时可能读到"写了一半"的字段组合；上锁后两者互斥（只读文件本身不加锁，读失败照旧吞掉用默认）。
+            lock (Sync)
             {
-                // 迁移过来的内容照读不误（老用户的语言/主题/档位仍然跟着走）；本目录没有这份文件就直接用默认值。
-                if (!File.Exists(SettingsPath)) return;
-                var p = JsonSerializer.Deserialize<Persist>(File.ReadAllText(SettingsPath));
-                if (p == null) return;
-                if (string.Equals(p.Theme, "dark", StringComparison.OrdinalIgnoreCase)) _theme = AppTheme.Dark;
-                _language = ParseSavedLanguage(p.Language);   // 修整8：没有已保存语言值时保持"未设置"，由 Language 按系统语言解析
-                _printReport = p.PrintReport;
-                // V4.9 修整第二批·修D：这里原来还读 Engine / ReportDirectory / KeepConvertedPdf /
-                // ConvertOutputDirectory / PrintoutDirectory 五枚键——随设置页四块一起退役，
-                // 老配置里残留的这五枚读不到就自然忽略（不迁移、不报错），取值走上面的默认。
-                _historyLimit = ParseHistoryLimit(p.HistoryLimit);
-                _lastPrinter = string.IsNullOrWhiteSpace(p.LastPrinter) ? null : p.LastPrinter.Trim();
-                _closeBehavior = ParseCloseBehavior(p.CloseBehavior);   // V4.9-1：老配置没这个键 → Ask
-                // 49 号·版2/版3：三枚新键。老配置里都没有 → 自动检查＝开、渠道＝正式版、上次检查时刻＝没查过
-                _autoCheckUpdate = ParseAutoCheck(p.AutoCheckUpdate);
-                _lastAutoCheckUtc = string.IsNullOrWhiteSpace(p.LastAutoCheckUtc) ? null : p.LastAutoCheckUtc.Trim();
-                _updateChannel = ParseChannel(p.UpdateChannel);
-                // 52 号令·返修③：老配置无此键＝开（ParseAutoCheck 同款口径）
-                _feedbackAutoLogs = p.FeedbackAutoLogs ?? true;
-                _autoStart = p.AutoStart;   // 80 号令：老配置无此键 → JSON 给 false，正是"默认关"，不需要可空兜底
-                _themeName = string.IsNullOrWhiteSpace(p.ThemeName) ? null : p.ThemeName.Trim();
+                try
+                {
+                    // 迁移过来的内容照读不误（老用户的语言/主题/档位仍然跟着走）；本目录没有这份文件就直接用默认值。
+                    if (!File.Exists(SettingsPath)) return;
+                    var p = JsonSerializer.Deserialize<Persist>(File.ReadAllText(SettingsPath));
+                    if (p == null) return;
+                    if (string.Equals(p.Theme, "dark", StringComparison.OrdinalIgnoreCase)) _theme = AppTheme.Dark;
+                    _language = ParseSavedLanguage(p.Language);   // 修整8：没有已保存语言值时保持"未设置"，由 Language 按系统语言解析
+                    _printReport = p.PrintReport;
+                    // V4.9 修整第二批·修D：这里原来还读 Engine / ReportDirectory / KeepConvertedPdf /
+                    // ConvertOutputDirectory / PrintoutDirectory 五枚键——随设置页四块一起退役，
+                    // 老配置里残留的这五枚读不到就自然忽略（不迁移、不报错），取值走上面的默认。
+                    _historyLimit = ParseHistoryLimit(p.HistoryLimit);
+                    _lastPrinter = string.IsNullOrWhiteSpace(p.LastPrinter) ? null : p.LastPrinter.Trim();
+                    _closeBehavior = ParseCloseBehavior(p.CloseBehavior);   // V4.9-1：老配置没这个键 → Ask
+                    // 49 号·版2/版3：三枚新键。老配置里都没有 → 自动检查＝开、渠道＝正式版、上次检查时刻＝没查过
+                    _autoCheckUpdate = ParseAutoCheck(p.AutoCheckUpdate);
+                    _lastAutoCheckUtc = string.IsNullOrWhiteSpace(p.LastAutoCheckUtc) ? null : p.LastAutoCheckUtc.Trim();
+                    _updateChannel = ParseChannel(p.UpdateChannel);
+                    // 52 号令·返修③：老配置无此键＝开（ParseAutoCheck 同款口径）
+                    _feedbackAutoLogs = p.FeedbackAutoLogs ?? true;
+                    _autoStart = p.AutoStart;   // 80 号令：老配置无此键 → JSON 给 false，正是"默认关"，不需要可空兜底
+                    _themeName = string.IsNullOrWhiteSpace(p.ThemeName) ? null : p.ThemeName.Trim();
+                    // v1.2.2 功能（2026-11-13）：虚拟打印机保存位置两枚新键。老配置无键 → 目录＝默认便携目录、询问＝开（不改变既有行为）
+                    _printoutDir = string.IsNullOrWhiteSpace(p.PrintoutDir) ? null : p.PrintoutDir.Trim();
+                    _askPrintoutEveryTime = p.AskPrintoutEveryTime;
+                }
+                catch { /* 损坏的设置文件忽略，使用默认 */ }
             }
-            catch { /* 损坏的设置文件忽略，使用默认 */ }
         }
 
         private static HistoryLimit ParseHistoryLimit(string s)
@@ -342,7 +377,10 @@ namespace BatchPrintCN
                     var p = new Persist
                     {
                         Theme = _theme == AppTheme.Dark ? "dark" : "light",
-                        Language = _language == AppLanguage.EnUS ? "en" : "zh",
+                        // v1.2.2 修（审计 P1）：_language==null（"跟随系统"态）原先被写成 "zh"——英语系统用户
+                        // 改任意其它设置（主题/档位/打印机）触发保存后，下次启动语言被永久钉成中文。
+                        // 现在未显式设置就写 null，Load 侧 ParseSavedLanguage(null) 本就能回退系统语言。
+                        Language = _language == null ? null : (_language == AppLanguage.EnUS ? "en" : "zh"),
                         PrintReport = _printReport,
                         HistoryLimit = _historyLimit == HistoryLimit.R100 ? "100"
                             : _historyLimit == HistoryLimit.TenDays ? "tendays"
@@ -355,9 +393,16 @@ namespace BatchPrintCN
                         UpdateChannel = ChannelToKey(_updateChannel),         // 49 号·版3
                         FeedbackAutoLogs = _feedbackAutoLogs,                 // 52 号令·返修③
                         ThemeName = _themeName,                               // 52 号令·步骤 4
-                        AutoStart = _autoStart                                // 80 号令（V1.2.1）：意图一律回写（老配置升上来就补上这枚）
+                        AutoStart = _autoStart,                               // 80 号令（V1.2.1）：意图一律回写（老配置升上来就补上这枚）
+                        PrintoutDir = _printoutDir,                           // v1.2.2 功能（2026-11-13）：虚拟打印机保存目录（null＝默认）
+                        AskPrintoutEveryTime = _askPrintoutEveryTime          // v1.2.2 功能：打印前询问（null＝未设置，读侧按 true 兜底）
                     };
-                    File.WriteAllText(SettingsPath, JsonSerializer.Serialize(p));
+                    // v1.2.2 修（审计 P1）：原直接 WriteAllText 落盘，写一半崩溃/断电＝整份配置损坏且 Load 静默回默认。
+                    // 改原子写（同 WatchRuleStore.Save 口径）：先写 .tmp 再 File.Replace（目标缺失则 Move），同目录保证同卷。
+                    string tmp = SettingsPath + ".tmp";
+                    File.WriteAllText(tmp, JsonSerializer.Serialize(p));
+                    if (File.Exists(SettingsPath)) File.Replace(tmp, SettingsPath, null);
+                    else File.Move(tmp, SettingsPath);
                 }
             }
             catch { }

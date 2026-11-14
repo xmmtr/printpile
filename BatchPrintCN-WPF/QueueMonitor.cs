@@ -45,20 +45,20 @@ namespace BatchPrintCN
                 {
                     using (PrintQueue queue = server.GetPrintQueue(printerName))
                     {
-                        PrintJobInfoCollection jobs = queue.GetPrintJobInfoCollection();
-                        using (jobs)
-                        {
-                            PrintSystemJobInfo best = null;
-                            DateTime bestTime = DateTime.MinValue;
-                            foreach (PrintSystemJobInfo job in jobs)
+                            PrintJobInfoCollection jobs = queue.GetPrintJobInfoCollection();
+                            using (jobs)
                             {
-                                if (string.Equals(job.Name, documentName, StringComparison.OrdinalIgnoreCase)
-                                    || (best == null && job.Name.IndexOf(documentName, StringComparison.OrdinalIgnoreCase) >= 0))
+                                PrintSystemJobInfo best = null;
+                                DateTime bestTime = DateTime.MinValue;
+                                foreach (PrintSystemJobInfo job in jobs)
                                 {
+                                    // v1.2.2 修（2026-11-08 拍板）：删掉"找不到精确同名任务就 IndexOf 子串模糊回退"——
+                                    // 文档名互为前缀/包含时会把别的任务的状态错挂过来；未命中就如实返回 null
+                                    //（轮询下一拍再来，与"任务已完成出队"同一处理）。多条同名取最近提交的一条（原口径）。
+                                    if (!string.Equals(job.Name, documentName, StringComparison.OrdinalIgnoreCase)) continue;
                                     if (best == null || job.TimeJobSubmitted > bestTime) { best = job; bestTime = job.TimeJobSubmitted; }
                                 }
-                            }
-                            if (best == null) return null;
+                                if (best == null) return null;
 
                             if ((best.JobStatus & PrintJobStatus.Completed) != 0) return new QueueStatus { State = QueueState.Completed };
                             if ((best.JobStatus & PrintJobStatus.Error) != 0 || (best.JobStatus & PrintJobStatus.Blocked) != 0)

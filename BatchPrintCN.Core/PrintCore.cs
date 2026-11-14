@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace BatchPrintCN
 {
@@ -98,7 +99,10 @@ namespace BatchPrintCN
         public static DocKind? GetKind(string path)
         {
             string ext = Path.GetExtension(path).ToLowerInvariant();
-            byte[] head = ReadHead(path, 8);
+            // v1.2.2 修：原只读 8 字节，而 webp 判定要看第 8~11 字节的 WEBP 标记——8 字节缓冲
+            // 使 h.Length>=12 永假、webp 从未识别成功过（扩展名清单宣称支持实为死功能）。读到 16 字节覆盖
+            // 全部魔数需求；其余格式只看更短前缀，行为不变。
+            byte[] head = ReadHead(path, 16);
             if (head == null) return null;   // 文件不可读视为不支持
 
             if (ext == ".pdf") return HasPrefix(head, 0x25, 0x50, 0x44, 0x46, 0x2D) ? DocKind.Pdf : null;          // %PDF-
@@ -295,11 +299,12 @@ namespace BatchPrintCN
         public static Bitmap Render(IntPtr doc, int index, int width, int height)
         {
             IntPtr page = FPDF_LoadPage(doc, index);
-            if (page == IntPtr.Zero) throw new Exception("PDF 页面加载失败（错误码 " + FPDF_GetLastError() + "）");
+            // v1.2.2 修（2026-11-08 拍板）：以下各处泛型 Exception → PrintEngineException（引擎侧故障分型；消息与上层 catch(Exception) 记账口径不变）。
+            if (page == IntPtr.Zero) throw new PrintEngineException("PDF 页面加载失败（错误码 " + FPDF_GetLastError() + "）");
             try
             {
                 IntPtr bmp = FPDFBitmap_Create(width, height, 0);
-                if (bmp == IntPtr.Zero) throw new Exception("创建渲染位图失败");
+                if (bmp == IntPtr.Zero) throw new PrintEngineException("创建渲染位图失败");
                 try
                 {
                     FPDFBitmap_FillRect(bmp, 0, 0, width, height, 0xFFFFFFFF);
@@ -354,14 +359,21 @@ namespace BatchPrintCN
             if (doc == IntPtr.Zero)
             {
                 int err = PdfiumNative.GetLastError();
-                // pdfium 错误码：1=FPDF_ERR_SUCCESS, 2=FPDF_ERR_PASSWORD(需密码/密码错误), 3=FPDF_ERR_SECURITY(权限不足)
-                if (err == 2)
+                // v1.2.2 修（审计 P0）：原映射整体错位（旧注释把 1 当 SUCCESS、2 当 PASSWORD、3 当 SECURITY）。
+                // pdfium 官方常量（fpdfview.h）：0=SUCCESS, 1=UNKNOWN, 2=FILE(打不开/被占用), 3=FORMAT(非PDF/损坏),
+                // 4=PASSWORD(缺密码/密码错), 5=SECURITY(不支持的安全方案), 6=PAGE。错位后果：加密 PDF(err=4)永远
+                // 走不到密码引导（M5 死路）；被占用(err=2)被误报"已加密需密码"；损坏(err=3)被误报"权限不足"。
+                if (err == 4)
                     throw new PdfPasswordRequiredException(string.IsNullOrEmpty(password)
                         ? "PDF 已加密，需要密码：" + Path.GetFileName(path)
                         : "PDF 密码不正确或已加密（权限不足）：" + Path.GetFileName(path));
+                if (err == 5)
+                    throw new PrintEngineException("PDF 权限不足（不允许打印/复制）：" + Path.GetFileName(path));
+                if (err == 2)
+                    throw new PrintEngineException("无法打开 PDF（文件不存在或被其他程序占用）：" + Path.GetFileName(path));
                 if (err == 3)
-                    throw new Exception("PDF 权限不足（不允许打印/复制）：" + Path.GetFileName(path));
-                throw new Exception("无法打开 PDF（可能已损坏）：" + Path.GetFileName(path) + "（错误码 " + err + "）");
+                    throw new PrintEngineException("无法打开 PDF（可能已损坏或不是有效的 PDF 文件）：" + Path.GetFileName(path));
+                throw new PrintEngineException("无法打开 PDF（可能已损坏）：" + Path.GetFileName(path) + "（错误码 " + err + "）");
             }
             return new PdfiumFile(doc);
         }
@@ -371,7 +383,7 @@ namespace BatchPrintCN
         public SizeF GetPageSizePt(int index)
         {
             IntPtr page = PdfiumNative.LoadPage(_doc, index);
-            if (page == IntPtr.Zero) throw new Exception("PDF 页面加载失败");
+            if (page == IntPtr.Zero) throw new PrintEngineException("PDF 页面加载失败");   // v1.2.2 修：泛型 Exception 分型（消息不变）
             try { return new SizeF(PdfiumNative.GetPageWidth(page), PdfiumNative.GetPageHeight(page)); }
             finally { PdfiumNative.ClosePage(page); }
         }
@@ -433,13 +445,6 @@ namespace BatchPrintCN
             // auto：有 COM 用 COM；无 COM 用 MiniPdf（仅支持格式）；老格式无 COM → 明确不可转
             if (EngineDetector.HasCom) return "com(自动)";
             return minipdfOk ? "minipdf(自动-未检测到Office/WPS)" : "无COM不可转";
-        }
-
-        // 兼容旧调用（WinForms 备用工程仍可使用）
-        public static bool TryPrint(PrintJob job, BatchPrinter.LogHandler log)
-        {
-            var (ok, _) = TryPrint(job, null, null, null, log);
-            return ok;
         }
 
         /// <summary>
@@ -515,8 +520,11 @@ namespace BatchPrintCN
             {
                 if (opt != null && opt.KeepConvertedPdf && File.Exists(tmp))
                 {
+                    // v1.2.2 修（2026-11-08 拍板）：回退目录改走 AppPaths.PrintoutDir（程序目录\printout\，程序目录只读时
+                    // Init 已切到 %LOCALAPPDATA%\PrintPile）——原先硬编码 %LOCALAPPDATA%\BatchPrintCN\printout 是
+                    // 便携化（V4.1）之前的旧布局，产物会落到一个再也不会被迁移/展示的角落。
                     string dir = string.IsNullOrWhiteSpace(opt.ConvertOutputDirectory)
-                        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatchPrintCN", "printout")
+                        ? AppPaths.PrintoutDir
                         : opt.ConvertOutputDirectory;
                     Directory.CreateDirectory(dir);
                     string ext = Path.GetExtension(job.FilePath ?? "").ToLowerInvariant();
@@ -603,8 +611,7 @@ namespace BatchPrintCN
                 log("引擎：无 COM 可用——未检测到 Office/WPS，且 MiniPdf 不支持 .doc/.xls/.ppt 老格式；建议将文件另存为 docx/xlsx/pptx，或安装 WPS/Office 后重试。");
                 return null;
             }
-            string actual = resolved.StartsWith("minipdf") ? "minipdf" : "com";
-            if (!resolved.StartsWith(actual)) { }
+            string actual = resolved.StartsWith("minipdf") ? "minipdf" : "com";   // actual 供下方日志与 Worker 参数使用
             log("引擎：" + resolved + "；启动转换子进程静默转 PDF…");
             try
             {
@@ -626,13 +633,19 @@ namespace BatchPrintCN
                 using (Process p = Process.Start(psi))
                 {
                     if (p == null) { log("转换子进程启动失败。"); return null; }
+                    // v1.2.2 修（2026-11-08 拍板）：管道死锁形态修复——原是"WaitForExit 同步等完再 ReadToEnd"，
+                    // 子进程 stdout 一旦写满管道缓冲就会卡死在写、父进程又等不到它退出，双方互等直到被 90 秒超时误杀。
+                    // 改成先 ReadToEndAsync 把读端任务挂上（管道随读随排空，子进程不再被写满卡住），再 WaitForExit(90000)
+                    //（等待与超时口径一字未改）；超时 Kill 后补 WaitForExit(5000) 让进程句柄与读任务都收干净。
+                    Task<string> stdout = p.StandardOutput.ReadToEndAsync();
                     if (!p.WaitForExit(90000))
                     {
                         try { p.Kill(); } catch { }
+                        try { stdout.Wait(5000); } catch { }   // Kill 后管道关闭，读任务必然完成/失败；等一下观察掉，不留未观察任务异常
                         log("转换子进程超时（90 秒），已终止该任务。提示：加密的 Office 文档无法自动转换，请先在 Office/WPS 中解锁后另存，再打印。");
                         return null;
                     }
-                    try { engineName = OfficeExport.EngineDisplayName(WorkerEngineName(p.StandardOutput.ReadToEnd())); } catch { }
+                    try { engineName = OfficeExport.EngineDisplayName(WorkerEngineName(stdout.Result)); } catch { }
                     log("转换子进程退出码：" + p.ExitCode);
                 }
                 sw.Stop();
@@ -699,14 +712,29 @@ namespace BatchPrintCN
             catch { return ""; }
         }
 
-        /// <summary>V4.2.3 G2：向 UI 发结构化进度。回调里的异常一律吞掉——进度显示不得影响打印主流程。</summary>
+        /// <summary>V4.2.3 G2：向 UI 发结构化进度。回调里的异常一律吞掉——进度显示不得影响打印主流程。
+        /// v1.2.2 修（2026-11-08 拍板）：补带 job 的重载把源文件路径装进事件，UI 行改按路径精确匹配。</summary>
         private void Report(PrintStage stage, PrintRecord rec, string reason)
+        {
+            Report(stage, rec, null, reason);
+        }
+
+        private void Report(PrintStage stage, PrintRecord rec, PrintJob job, string reason)
         {
             Action<PrintProgress> h = Progress;
             if (h == null) return;
             try
             {
-                h(new PrintProgress { Stage = stage, FileName = rec.Name, Engine = rec.Engine, Reason = reason, Copies = rec.Copies, Pages = rec.Pages });
+                h(new PrintProgress
+                {
+                    Stage = stage,
+                    FileName = rec.Name,
+                    FilePath = job != null ? job.FilePath : null,   // v1.2.2 修：源路径随事件走（UI 按路径匹配行）
+                    Engine = rec.Engine,
+                    Reason = reason,
+                    Copies = rec.Copies,
+                    Pages = rec.Pages
+                });
             }
             catch { }
         }
@@ -735,7 +763,7 @@ namespace BatchPrintCN
                     // 所以按 job 现算一次 Resolve（纯函数，不改打印行为）。
                     _log("正在打印：" + rec.Name + "（" + FileClassifier.KindText(job.Kind) + "，份数 " + job.Copies + (actualEngine != "-" ? "，引擎 " + actualEngine : "")
                         + (job.Override != null && job.Override.HasAny ? "，本文件自定义参数：" + EffectiveOptions.Resolve(_opt, job.Override).Summary() : "") + "）");
-                    Report(PrintStage.Started, rec, null);
+                    Report(PrintStage.Started, rec, job, null);
                     rec.Pages = PrintOne(job);
                     rec.Success = true;
                     ok++;
@@ -774,7 +802,7 @@ namespace BatchPrintCN
                         }
                         catch { }
                     }
-                    Report(PrintStage.Completed, rec, null);
+                    Report(PrintStage.Completed, rec, job, null);
                 }
                 catch (Exception ex)
                 {
@@ -790,7 +818,7 @@ namespace BatchPrintCN
                         }
                         catch { }
                     }
-                    Report(PrintStage.Failed, rec, ex.Message);
+                    Report(PrintStage.Failed, rec, job, ex.Message);
                 }
                 records.Add(rec);
                 done++;
@@ -834,7 +862,7 @@ namespace BatchPrintCN
             {
                 string[] installed = PrinterSettings.InstalledPrinters.Cast<string>().ToArray();
                 if (Array.IndexOf(installed, _printer) < 0)
-                    throw new Exception("找不到打印机：" + _printer);
+                    throw new PrintEngineException("找不到打印机：" + _printer);   // v1.2.2 修：泛型 Exception 分型（消息不变）
                 doc.PrinterSettings.PrinterName = _printer;
             }
             if (job.Copies > 1) doc.PrinterSettings.Copies = (short)Math.Min(999, Math.Max(1, job.Copies));
@@ -882,8 +910,10 @@ namespace BatchPrintCN
             if (_printer.IndexOf("Microsoft Print to PDF", StringComparison.OrdinalIgnoreCase) < 0) return;
             try
             {
+                // v1.2.2 修（2026-11-08 拍板）：同 KeepOrDeleteConverted——回退目录改走 AppPaths.PrintoutDir，
+                // 不再硬编码 %LOCALAPPDATA%\BatchPrintCN\printout 旧布局（前置条件：AppPaths.Init 已先行，产品两处调用都在其后）。
                 string dir = string.IsNullOrWhiteSpace(_opt.PrintoutDirectory)
-                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatchPrintCN", "printout")
+                    ? AppPaths.PrintoutDir
                     : _opt.PrintoutDirectory;
                 Directory.CreateDirectory(dir);
                 string baseName = Path.GetFileNameWithoutExtension(job.DisplayName ?? job.Name);

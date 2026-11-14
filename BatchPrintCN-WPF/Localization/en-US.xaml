@@ -51,7 +51,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <sys:String x:Key="s.HistoryName">File Name</sys:String>
     <sys:String x:Key="s.HistoryStatus">Status</sys:String>
     <sys:String x:Key="s.HistorySearch">Search file or folder</sys:String>
-    <sys:String x:Key="s.HistoryFolder">Folder</sys:String>
+    <sys:String x:Key="s.HistoryFolder">Source path</sys:String>
+    <!-- v1.2.2 feature (2026-11-14): toast text when double-clicking the source-path cell copies the full path -->
+    <sys:String x:Key="s.HistoryCopied">Full path copied to clipboard</sys:String>
     <sys:String x:Key="s.HistoryExport">Export CSV</sys:String>
     <sys:String x:Key="s.HistoryCountFiltered">{0} of {1} match</sys:String>
     <sys:String x:Key="s.HistoryExportEmpty">No records match the current filter to export.</sys:String>
@@ -276,6 +278,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <!-- 80 号令（V1.2.1）·开机自启动（与关闭行为同一张卡的第二行；标题＋说明各一枚，中英成对） -->
     <sys:String x:Key="s.SettingsAutoStartTitle">Start with Windows</sys:String>
     <sys:String x:Key="s.SettingsAutoStartNote">Launch PrintPile automatically when you sign in to Windows (current user only)</sys:String>
+    <!-- v1.2.2 feature (2026-11-13): virtual printer save location — settings card (3) + ask dialog (5), paired with zh-CN -->
+    <sys:String x:Key="s.SettingsPrintoutTitle">Virtual printer save location</sys:String>
+    <sys:String x:Key="s.SettingsPrintoutNote">Folder where "Microsoft Print to PDF" output is saved</sys:String>
+    <sys:String x:Key="s.SettingsPrintoutAsk">Ask for save location before printing</sys:String>
+    <sys:String x:Key="s.SaveLocTitle">Save files to</sys:String>
+    <sys:String x:Key="s.SaveLocNote">Files produced by this batch will be saved to the folder below (asked once per batch).</sys:String>
+    <sys:String x:Key="s.SaveLocBrowse">Browse…</sys:String>
+    <sys:String x:Key="s.SaveLocDontAsk">Don't ask again (always use this folder)</sys:String>
+    <sys:String x:Key="s.SaveLocCancelled">Cancelled: no save location selected, batch not printed</sys:String>
     <sys:String x:Key="s.CloseAsk">Ask every time</sys:String>
     <sys:String x:Key="s.CloseMinimize">Minimize to tray</sys:String>
     <sys:String x:Key="s.CloseExit">Quit directly</sys:String>
@@ -341,6 +352,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <sys:String x:Key="s.PvLabelOutput">Output</sys:String>
     <sys:String x:Key="s.PvKindPdfFmt">{0} (printed directly)</sys:String>
     <sys:String x:Key="s.PvKindOfficeFmt">{0} → PDF ({1})</sys:String>
+    <!-- v1.2.2 修 (2026-11-14 field feedback No.4): image direct-render keys (info bar type segment / loading hint / load failure hint) -->
+    <sys:String x:Key="s.PvKindImageFmt">{0} (rendered directly, no PDF conversion)</sys:String>
+    <sys:String x:Key="s.PvLoadingImage">Loading image…</sys:String>
+    <sys:String x:Key="s.PvImageLoadFailedFmt">Failed to load image: {0}</sys:String>
     <sys:String x:Key="s.PvStateNone">not converted</sys:String>
     <sys:String x:Key="s.PvStateConverting">converting…</sys:String>
     <sys:String x:Key="s.PvStateCached">converted, cached</sys:String>
@@ -490,4 +505,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     <!-- ===== Order 73 (V1.2.0, D-36 supersedes D-24): fully free & open under GNU GPLv3 - the code/signing,
          time-limited evaluation and feature caps are removed; 41 paired zh/en keys retired. The 6 keys below are new. ===== -->
     <sys:String x:Key="s.AboutLicenseLine">This software is open source under GNU GPLv3 and every feature is free; the full licence text ships in licenses\LICENSE.</sys:String>
+    <!-- ===== v1.2.2 fix (decided 2026-11-08): print-settings dialog preview/effective summary moves into resource keys
+         (was hardcoded Chinese; 17 keys, zh/en paired). Odd/even wording reuses the existing s.PsParityOdd /
+         s.PsParityEven keys instead of new ones; layout unchanged, see PrintSettingsPanel. ===== -->
+    <sys:String x:Key="s.PsSumDuplexLong">duplex - long edge</sys:String>
+    <sys:String x:Key="s.PsSumDuplexShort">duplex - short edge</sys:String>
+    <sys:String x:Key="s.PsSumSimplex">simplex</sys:String>
+    <sys:String x:Key="s.PsSumColor">colour</sys:String>
+    <sys:String x:Key="s.PsSumBw">black &amp; white</sys:String>
+    <sys:String x:Key="s.PsSumPortrait">portrait</sys:String>
+    <sys:String x:Key="s.PsSumLandscape">landscape</sys:String>
+    <sys:String x:Key="s.PsSumOrientAuto">auto</sys:String>
+    <sys:String x:Key="s.PsSumScaleFit">fit to page</sys:String>
+    <sys:String x:Key="s.PsSumScaleNone">no scaling</sys:String>
+    <sys:String x:Key="s.PsSumScaleShrink">shrink to fit</sys:String>
+    <sys:String x:Key="s.PsSumScaleStretch">stretch to fill</sys:String>
+    <sys:String x:Key="s.PsSumScalePercentFmt">{0}%</sys:String>
+    <sys:String x:Key="s.PsSumNupFmt">{0} per sheet</sys:String>
+    <sys:String x:Key="s.PsSumBooklet">booklet</sys:String>
+    <sys:String x:Key="s.PsSumPreview">preview</sys:String>
+    <sys:String x:Key="s.PsSumSourceFmt">tray: {0}</sys:String>
 </ResourceDictionary>
