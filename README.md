@@ -1,5 +1,7 @@
 # PrintPile（批量打印助手）
 
+![PrintPile——Windows 批量打印助手](docs/screenshots/banner.png)
+
 > 一次拖拽，几百份文档排队打完——Windows 桌面批量打印工具。PDF / Word / Excel / PPT / 图片 / 文本混批排队、逐文件设份数与页码范围，打印前双击即可逐页预览；全程本机处理，文档永不上传。
 
 **PrintPile 以 [GNU GPLv3](LICENSE) 发布，全部功能免费开放，无任何数量限制。**
