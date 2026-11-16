@@ -51,7 +51,11 @@
 
 ## 界面
 
-![设置页](docs/screenshots/settings.png)
+| 打印任务（批量打印列表） | 合并 PDF（PDF 专区） |
+| --- | --- |
+| ![打印任务](docs/screenshots/main.jpg) | ![合并 PDF](docs/screenshots/merge.jpg) |
+
+![打印预览（双击文件逐页查看，红纹提示超出可打印区域）](docs/screenshots/preview.jpg)
 
 更多界面与教程见官网。
 

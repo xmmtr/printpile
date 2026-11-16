@@ -17,4 +17,14 @@
 
 ## 截图
 
-![设置页](screenshots/settings.png)
+打印任务（批量打印列表）：
+
+![打印任务](screenshots/main.jpg)
+
+合并 PDF（PDF 专区）：
+
+![合并 PDF](screenshots/merge.jpg)
+
+打印预览（双击文件逐页查看，红纹提示超出可打印区域）：
+
+![打印预览](screenshots/preview.jpg)
